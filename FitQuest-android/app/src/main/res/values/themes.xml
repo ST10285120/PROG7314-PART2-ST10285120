@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.FitQuest" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#111827</item>
+        <item name="android:windowBackground">#F9FAFB</item>
+    </style>
+</resources>
