@@ -27,13 +27,16 @@ android {
         buildConfigField("String", "GITHUB_CLIENT_ID", "\"Ov23liko6pyW9vX72D1X\"")
     }
 
-    buildTypes {
+       buildTypes {
         debug {
-            buildConfigField("String", "API_BASE_URL", "\"http://127.0.0.1:3000/\"")
+         
+          
+            buildConfigField("String", "API_BASE_URL", "\"https://prog7314-part2-st10285120.onrender.com/\"")
         }
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            buildConfigField("String", "API_BASE_URL", "\"https://prog7314-part2-st10285120.onrender.com/\"")
         }
     }
 
