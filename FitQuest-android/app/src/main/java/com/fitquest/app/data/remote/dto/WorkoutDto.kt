@@ -74,7 +74,7 @@ data class SuggestedWorkoutExerciseDto(
 data class SuggestedWorkoutResponse(
     val title: String,
     val exercises: List<SuggestedWorkoutExerciseDto>,
-    val focusMuscleGroups: List<String> = emptyList()
+    val focusMuscleGroups: List<String>? = null
 )
 
 /** Dashboard data from GET /api/users/me/progress, covering every device. */

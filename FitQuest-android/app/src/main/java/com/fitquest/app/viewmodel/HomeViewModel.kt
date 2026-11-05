@@ -88,7 +88,7 @@ class HomeViewModel(
                     _uiState.value = _uiState.value.copy(
                         suggestedTitle = suggestion.title,
                         suggestedExercises = suggestion.exercises,
-                        focusMuscleGroups = suggestion.focusMuscleGroups,
+                        focusMuscleGroups = suggestion.focusMuscleGroups.orEmpty(),
                         isLoadingSuggestion = false
                     )
                 },
