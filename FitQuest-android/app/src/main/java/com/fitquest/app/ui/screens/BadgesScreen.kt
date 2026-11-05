@@ -101,6 +101,15 @@ private fun BadgeTile(badge: BadgeDto) {
                 style = MaterialTheme.typography.titleSmall,
                 textAlign = TextAlign.Center
             )
+            BadgeText.descriptionRes(badge.name)?.let { descriptionRes ->
+                Spacer(Modifier.height(Spacing.xs))
+                Text(
+                    stringResource(descriptionRes),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+            }
             if (!earned && badge.target > 0) {
                 Spacer(Modifier.height(Spacing.xs))
                 LinearProgressIndicator(
