@@ -8,6 +8,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.spring
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAPhoto
@@ -31,7 +33,9 @@ import com.fitquest.app.data.local.dao.PersonalRecordRow
 import com.fitquest.app.data.local.entity.WorkoutEntity
 import com.fitquest.app.data.remote.dto.ProgressPhotoDto
 import com.fitquest.app.data.repository.CompletionResult
+import com.fitquest.app.ui.components.ConfettiOverlay
 import com.fitquest.app.ui.components.ConfirmDialog
+import com.fitquest.app.ui.components.EmptyState
 import com.fitquest.app.ui.components.ErrorBanner
 import com.fitquest.app.ui.components.FitQuestCard
 import com.fitquest.app.ui.components.LoadingBlock
@@ -39,6 +43,7 @@ import com.fitquest.app.ui.components.PrimaryButton
 import com.fitquest.app.ui.components.SectionHeader
 import com.fitquest.app.ui.components.Spacing
 import com.fitquest.app.ui.components.SplitBar
+import com.fitquest.app.ui.components.StatsHero
 import com.fitquest.app.ui.components.StatusChip
 import com.fitquest.app.ui.components.exerciseName
 import com.fitquest.app.ui.components.VolumeLineChart
@@ -69,6 +74,9 @@ fun ProgressScreen(
     val dateFormat = remember { SimpleDateFormat("EEE, d MMM", Locale.getDefault()) }
     val progress = uiState.progress
     val totalVolumeKg = progress?.volumeByWeek?.values?.sum() ?: recentWorkouts.sumOf { it.totalVolumeKg }
+    val serverRecords = progress?.prsByExercise.orEmpty().entries.sortedByDescending { it.value }
+    val records = serverRecords.map { it.key to it.value }
+        .ifEmpty { localRecords.map { it.exerciseName to it.weightKg } }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = Spacing.md),
@@ -80,31 +88,11 @@ fun ProgressScreen(
         }
 
         item {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                FitQuestCard(modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.FitnessCenter, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "${progress?.totalWorkouts?.takeIf { it > 0 } ?: recentWorkouts.size}",
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                    Text(
-                        stringResource(R.string.stat_workouts),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                FitQuestCard(modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Filled.EmojiEvents, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
-                    Spacer(Modifier.height(4.dp))
-                    Text(WeightUnits.format(totalVolumeKg, units), style = MaterialTheme.typography.headlineSmall)
-                    Text(
-                        stringResource(R.string.stat_volume),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            StatsHero(
+                workouts = progress?.totalWorkouts?.takeIf { it > 0 } ?: recentWorkouts.size,
+                volume = WeightUnits.format(totalVolumeKg, units),
+                records = records.size
+            )
         }
 
         if (uiState.isLoading) item { LoadingBlock() }
@@ -143,14 +131,9 @@ fun ProgressScreen(
         }
 
         item { SectionHeader(stringResource(R.string.personal_records)) }
-        val serverRecords = progress?.prsByExercise.orEmpty().entries.sortedByDescending { it.value }
-        val records = serverRecords.map { it.key to it.value }
-            .ifEmpty { localRecords.map { it.exerciseName to it.weightKg } }
         if (records.isEmpty()) {
             item {
-                FitQuestCard {
-                    Text(stringResource(R.string.no_records), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+                EmptyState(icon = Icons.Filled.EmojiEvents, message = stringResource(R.string.no_records))
             }
         } else {
             items(records, key = { it.first }) { (apiName, weightKg) ->
@@ -194,9 +177,7 @@ fun ProgressScreen(
         }
         item {
             if (uiState.photos.isEmpty()) {
-                FitQuestCard {
-                    Text(stringResource(R.string.no_photos), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+                EmptyState(icon = Icons.Filled.AddAPhoto, message = stringResource(R.string.no_photos))
             } else {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                     items(uiState.photos, key = { it.id }) { photo ->
@@ -209,9 +190,7 @@ fun ProgressScreen(
         item { SectionHeader(stringResource(R.string.workout_history)) }
         if (recentWorkouts.isEmpty()) {
             item {
-                FitQuestCard {
-                    Text(stringResource(R.string.no_history), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+                EmptyState(icon = Icons.Filled.FitnessCenter, message = stringResource(R.string.no_history))
             }
         }
         items(recentWorkouts, key = { it.localId }) { workout ->
@@ -285,12 +264,16 @@ private fun PhotoTile(photo: ProgressPhotoDto, onDelete: () -> Unit) {
 /** Shown after finishing. If the numbers are not confirmed yet, it says they are an estimate. */
 @Composable
 fun WorkoutSummaryScreen(completion: CompletionResult?, onDone: () -> Unit) {
+    val animatedXp by animateIntAsState(completion?.xpEarned ?: 0, tween(1000))
+
     // A short pop gives the end of a session the feel of completing a quest.
     val trophyScale = remember { Animatable(0.4f) }
     LaunchedEffect(Unit) {
         trophyScale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
+    if (completion != null && !completion.pendingSync) ConfettiOverlay()
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Spacing.lg),
         verticalArrangement = Arrangement.Center
@@ -321,7 +304,7 @@ fun WorkoutSummaryScreen(completion: CompletionResult?, onDone: () -> Unit) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            "+${completion.xpEarned}",
+                            "+$animatedXp",
                             style = MaterialTheme.typography.headlineSmall,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -391,5 +374,6 @@ fun WorkoutSummaryScreen(completion: CompletionResult?, onDone: () -> Unit) {
 
         Spacer(Modifier.height(Spacing.lg))
         PrimaryButton(text = stringResource(R.string.done), onClick = onDone)
+    }
     }
 }
