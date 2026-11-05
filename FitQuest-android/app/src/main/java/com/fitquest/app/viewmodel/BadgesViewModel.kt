@@ -1,5 +1,6 @@
 package com.fitquest.app.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fitquest.app.data.remote.dto.BadgeDto
@@ -30,6 +31,7 @@ class BadgesViewModel(private val workoutRepository: WorkoutRepository) : ViewMo
             workoutRepository.getBadgeCatalog().fold(
                 onSuccess = { badges -> _uiState.value = BadgesUiState(badges = badges, isLoading = false) },
                 onFailure = { err ->
+                    Log.w("BadgesViewModel", "Badges unavailable: ${err.message}")
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         errorMessage = err.message ?: "Couldn't load badges"

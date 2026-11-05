@@ -1,5 +1,6 @@
 package com.fitquest.app.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fitquest.app.data.local.entity.SetEntryEntity
@@ -63,6 +64,7 @@ class WorkoutViewModel(private val workoutRepository: WorkoutRepository) : ViewM
     fun startWorkout(title: String) {
         viewModelScope.launch {
             val id = workoutRepository.startWorkout(title)
+            Log.d(TAG, "Empty workout started")
             _uiState.value = _uiState.value.copy(workoutLocalId = id, workoutStartedAt = System.currentTimeMillis())
             workoutExercisesFlow.value = id
             loadExerciseLibrary()
@@ -71,6 +73,7 @@ class WorkoutViewModel(private val workoutRepository: WorkoutRepository) : ViewM
     fun startSuggestedWorkout(title: String, exercises: List<SuggestedWorkoutExerciseDto>) {
         viewModelScope.launch {
             val id = workoutRepository.startWorkoutWithExercises(title, exercises)
+            Log.d(TAG, "Workout started with ${exercises.size} exercise(s)")
             _uiState.value = _uiState.value.copy(workoutLocalId = id, workoutStartedAt = System.currentTimeMillis())
             workoutExercisesFlow.value = id
             loadExerciseLibrary()
@@ -151,6 +154,7 @@ class WorkoutViewModel(private val workoutRepository: WorkoutRepository) : ViewM
         val workoutId = _uiState.value.workoutLocalId ?: return
         viewModelScope.launch {
             val result = workoutRepository.completeWorkout(workoutId)
+            Log.i(TAG, "Workout finished, pendingSync=${result.pendingSync}")
             _uiState.value = _uiState.value.copy(completion = result)
         }
     }
@@ -181,5 +185,14 @@ class WorkoutViewModel(private val workoutRepository: WorkoutRepository) : ViewM
         _uiState.value = WorkoutUiState()
         workoutExercisesFlow.value = null
         currentSetsFlow.value = null
+    }
+
+    override fun onCleared() {
+        Log.d(TAG, "Cleared")
+        super.onCleared()
+    }
+
+    private companion object {
+        const val TAG = "WorkoutViewModel"
     }
 }
