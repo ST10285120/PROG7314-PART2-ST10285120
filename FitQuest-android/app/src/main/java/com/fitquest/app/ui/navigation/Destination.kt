@@ -8,6 +8,7 @@ sealed class Destination(val route: String) {
     data object Progress : Destination("progress")
     data object Badges : Destination("badges")
     data object Settings : Destination("settings")
+    data object Routines : Destination("routines")
 
     data object WorkoutDetail : Destination("workout_detail/{workoutLocalId}") {
         const val ARG_WORKOUT_LOCAL_ID = "workoutLocalId"
