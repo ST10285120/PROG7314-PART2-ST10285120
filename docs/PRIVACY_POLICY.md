@@ -30,7 +30,7 @@ Workouts are also stored on your phone so the app works offline. Data is sent ov
 
 ## Your choices
 
-You can delete progress photos in the app, turn off notifications in your phone's settings, and sign out at any time. To delete your account and data, email the address below.
+You can delete progress photos in the app, turn off notifications in your phone's settings, and sign out at any time. To delete your account and all linked data, go to Settings and choose Delete Account.
 
 ## Children
 

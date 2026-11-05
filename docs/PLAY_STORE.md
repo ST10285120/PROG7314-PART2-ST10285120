@@ -8,7 +8,8 @@
 - [x] R8 minification and resource shrinking on release builds
 - [x] Release signing configured outside Git
 - [x] Network logging removed from release builds
-- [x] Privacy policy written
+- [x] Privacy policy written and linked in the app
+- [x] In-app account deletion in Settings
 - [x] App icon and feature graphic in `docs/store/`
 - [ ] Signed release APK and app bundle built
 - [ ] Phone screenshots added to `docs/store/screenshots/`
@@ -61,7 +62,9 @@ Sign in with Google or GitHub. There is no password to remember.
 | Fitness activity | Yes | App functionality |
 | Device token | Yes | Notifications |
 
-Data is encrypted in transit and is not sold or shared with third parties for advertising. Users can request deletion through the contact email.
+For the account deletion URL question, describe the steps: Settings, then Delete Account.
+
+Data is encrypted in transit and is not sold or shared with third parties for advertising. Users can delete their account and data in Settings.
 
 ## Content rating
 

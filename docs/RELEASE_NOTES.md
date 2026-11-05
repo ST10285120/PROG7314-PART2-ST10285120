@@ -57,9 +57,23 @@ These are the features I specified during Part 1 and completed for the POE.
 - Signing in with a second provider on the same email now explains the problem instead of failing.
 - Rest ending now gives haptic feedback, and the exercise picker can be cancelled.
 
+### Completed from the Part 1 design
+
+- **Custom routines (FR2):** create, edit, delete and start routines. They work offline and sync to the API.
+- **Exercise filtering:** the exercise library can be searched and filtered by muscle group.
+- **Single Sign-On replaces password registration (FR1):** the POE brief requires SSO, so no passwords are stored.
+
+### Final audit changes
+
+- In-app account deletion and a privacy policy link, both needed for Google Play.
+- Exercise names, equipment and badge descriptions are now translated.
+- Badges and progress stay visible offline using the last synced copy.
+- Confirmation dialogs protect sign-out, account deletion, and deleting routines and photos.
+- The summary now shows level, records and a level-up marker.
+- A language change no longer asks for biometrics again, and the rest timer stays accurate in the background.
+
 ### Known limitations
 
-- Exercise names come from the shared library and stay in English.
 - Photos need a connection. They are not queued offline.
 - Streak days are based on UTC.
 - If a sign-out happens with workouts that could not be uploaded, they stay on the phone and upload under the next account that signs in.

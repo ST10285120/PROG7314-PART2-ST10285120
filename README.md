@@ -1,5 +1,8 @@
 # FitQuest
 
+[![API tests](https://github.com/ST10285120/PROG7314-PART2-ST10285120/actions/workflows/api.yml/badge.svg)](https://github.com/ST10285120/PROG7314-PART2-ST10285120/actions/workflows/api.yml)
+[![Android build and tests](https://github.com/ST10285120/PROG7314-PART2-ST10285120/actions/workflows/android.yml/badge.svg)](https://github.com/ST10285120/PROG7314-PART2-ST10285120/actions/workflows/android.yml)
+
 FitQuest is a native Android strength-training app with a role-playing progression system. Users log sets offline in the gym, then earn XP, levels, streaks and badges from a custom cloud-hosted REST API.
 
 > **Module:** PROG7314 Portfolio of Evidence · **Student:** Carson Norman (ST10285120)
@@ -20,7 +23,8 @@ Research for this project found a gap between strength loggers such as Strong, w
 | Biometric authentication | Fingerprint, face or device PIN after sign-in, on each launch and after five minutes in the background. |
 | Offline mode | Workouts save to Room first and sync through WorkManager without duplicates once the phone reconnects. |
 | Real-time notifications | Firebase Cloud Messaging for badges and level-ups, plus a local streak reminder at a chosen time. |
-| Multi-language | English, Afrikaans and isiZulu, switchable in the app. |
+| Multi-language | English, Afrikaans and isiZulu, switchable in the app, including exercise and badge names. |
+| Routines | Create, edit, delete and start custom routines, online or offline. |
 | Settings | Units that convert all weights, theme, language, reminder time, rest timer, biometric lock and account details. |
 | Personal records | Decided by the API against the user's full history. |
 | Streaks and levels | Calculated by the API, with one grace day for a missed session. |
@@ -102,6 +106,7 @@ The full endpoint list is in [fitquest-api/README.md](fitquest-api/README.md).
 - [Play Store readiness](docs/PLAY_STORE.md)
 - [Privacy policy](docs/PRIVACY_POLICY.md)
 - [Demo script](docs/DEMO_SCRIPT.md)
+- [Rubric checklist](docs/RUBRIC_CHECKLIST.md)
 
 ## References
 
