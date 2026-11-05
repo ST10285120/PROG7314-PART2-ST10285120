@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.fitquest.app.R
 import com.fitquest.app.ui.components.FitQuestCard
+import com.fitquest.app.ui.components.exerciseName
 import com.fitquest.app.ui.components.LoadingBlock
 import com.fitquest.app.ui.components.SectionHeader
 import com.fitquest.app.ui.components.Spacing
@@ -91,7 +92,7 @@ fun WorkoutDetailScreen(uiState: WorkoutDetailUiState, units: String) {
 
         items(detail.exercises) { exercise ->
             FitQuestCard {
-                Text(exercise.exerciseName, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleSmall)
+                Text(exerciseName(exercise.exerciseName), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.height(Spacing.xs))
                 exercise.sets.forEach { set ->
                     Row(

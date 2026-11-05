@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -18,6 +19,7 @@ import com.fitquest.app.R
 import com.fitquest.app.data.local.entity.WorkoutEntity
 import com.fitquest.app.data.remote.dto.UserDto
 import com.fitquest.app.ui.components.FitQuestCard
+import com.fitquest.app.ui.components.exerciseName
 import com.fitquest.app.ui.components.LoadingBlock
 import com.fitquest.app.ui.components.PrimaryButton
 import com.fitquest.app.ui.components.QuestHeroCard
@@ -41,6 +43,7 @@ fun HomeScreen(
     units: String,
     recentWorkouts: List<WorkoutEntity>,
     onStartWorkout: () -> Unit,
+    onOpenRoutines: () -> Unit,
     onResumeWorkout: (WorkoutEntity) -> Unit,
     onClickSuggestedWorkout: () -> Unit,
     onClickStreak: () -> Unit,
@@ -101,7 +104,7 @@ fun HomeScreen(
                         }
                         Spacer(Modifier.height(Spacing.sm))
                         Text(
-                            uiState.suggestedExercises.joinToString(" · ") { it.name },
+                            uiState.suggestedExercises.map { exerciseName(it.name) }.joinToString(" · "),
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(Modifier.height(Spacing.xs))
@@ -121,6 +124,18 @@ fun HomeScreen(
                 onClick = { if (activeWorkout != null) onResumeWorkout(activeWorkout) else onStartWorkout() },
                 leadingIcon = { Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp)) }
             )
+        }
+
+        item {
+            OutlinedButton(
+                onClick = onOpenRoutines,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            ) {
+                Icon(Icons.Filled.FitnessCenter, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(Spacing.sm))
+                Text(stringResource(R.string.my_routines))
+            }
         }
 
         item { SectionHeader(stringResource(R.string.recent_workouts)) }
