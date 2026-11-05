@@ -150,4 +150,9 @@
     <string name="notification_test_body">Lo mlayezo uvela ku-API ye-FitQuest nge-Firebase.</string>
     <string name="notification_reminder_title">Gcina uchungechunge lwakho</string>
     <string name="notification_reminder_body">Awukakufaki ukuzivocavoca namuhla.</string>
+    <string name="cancel">Khansela</string>
+    <string name="resume_workout">Qhubeka nokuzivocavoca</string>
+    <string name="delete_set">Susa isethi</string>
+    <string name="chart_peak">Isonto elihle kakhulu: %1$s</string>
+    <string name="error_account_exists">Le imeyili isivele isebenzisa enye indlela yokungena. Zama enye.</string>
 </resources>

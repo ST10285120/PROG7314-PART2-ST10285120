@@ -150,4 +150,9 @@
     <string name="notification_test_body">Hierdie boodskap kom van die FitQuest-API deur Firebase.</string>
     <string name="notification_reminder_title">Hou jou reeks aan die gang</string>
     <string name="notification_reminder_body">Jy het nog nie vandag \'n oefensessie aangeteken nie.</string>
+    <string name="cancel">Kanselleer</string>
+    <string name="resume_workout">Hervat oefensessie</string>
+    <string name="delete_set">Vee stel uit</string>
+    <string name="chart_peak">Beste week: %1$s</string>
+    <string name="error_account_exists">Hierdie e-pos gebruik reeds \'n ander aanmeldopsie. Probeer die ander een.</string>
 </resources>

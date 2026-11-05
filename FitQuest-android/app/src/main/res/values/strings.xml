@@ -151,4 +151,9 @@
     <string name="notification_test_body">This message came from the FitQuest API through Firebase.</string>
     <string name="notification_reminder_title">Keep your streak alive</string>
     <string name="notification_reminder_body">You haven\'t logged a workout today.</string>
+    <string name="cancel">Cancel</string>
+    <string name="resume_workout">Resume Workout</string>
+    <string name="delete_set">Delete set</string>
+    <string name="chart_peak">Best week: %1$s</string>
+    <string name="error_account_exists">This email already uses a different sign-in option. Try the other one.</string>
 </resources>
