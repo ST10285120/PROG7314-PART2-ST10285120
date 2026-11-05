@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
@@ -30,8 +31,11 @@ import com.fitquest.app.data.remote.dto.UserDto
 import com.fitquest.app.ui.components.ConfirmDialog
 import com.fitquest.app.ui.components.ErrorBanner
 import com.fitquest.app.ui.components.FitQuestCard
+import com.fitquest.app.ui.components.QuestGradient
 import com.fitquest.app.ui.components.SectionHeader
 import com.fitquest.app.ui.components.Spacing
+import com.fitquest.app.ui.components.rankTitle
+import com.fitquest.app.ui.theme.FitQuestGold
 import com.fitquest.app.viewmodel.SettingsUiState
 
 private val REMINDER_TIME_PATTERN = Regex("^([01]\\d|2[0-3]):[0-5]\\d$")
@@ -104,36 +108,45 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(Spacing.md)
     ) {
         SectionHeader(stringResource(R.string.section_account))
-        FitQuestCard {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        Card(shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.background(QuestGradient).padding(Spacing.md).fillMaxWidth()
+            ) {
                 Avatar(profile = profile, onClick = onChangeAvatar)
                 Spacer(Modifier.width(Spacing.md))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         profile?.username?.takeIf { it.isNotBlank() } ?: stringResource(R.string.account_signed_in),
-                        style = MaterialTheme.typography.titleMedium
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Color.White
                     )
+                    profile?.let {
+                        Text(
+                            rankTitle(it.level),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = FitQuestGold
+                        )
+                    }
                     profile?.email?.takeIf { it.isNotBlank() }?.let { email ->
                         Text(
                             email,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = Color.White.copy(alpha = 0.8f)
                         )
                     }
                     TextButton(onClick = onChangeAvatar, enabled = !uiState.isUploadingAvatar) {
                         Text(
                             stringResource(
                                 if (uiState.isUploadingAvatar) R.string.uploading else R.string.change_photo
-                            )
+                            ),
+                            color = FitQuestGold
                         )
                     }
                 }
             }
-            if (uiState.avatarError) {
-                Spacer(Modifier.height(Spacing.sm))
-                ErrorBanner(stringResource(R.string.avatar_error))
-            }
         }
+        if (uiState.avatarError) ErrorBanner(stringResource(R.string.avatar_error))
 
         SectionHeader(stringResource(R.string.section_preferences))
 
