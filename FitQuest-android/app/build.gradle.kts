@@ -13,7 +13,7 @@ if (file("google-services.json").exists()) {
     apply(plugin = "com.google.gms.google-services")
 }
 
-// Signing details stay out of Git. See docs/SETUP.md for how to create this file.
+// Signing details stay out of Git, in keystore.properties.
 val keystoreProperties = Properties().apply {
     val propertiesFile = rootProject.file("keystore.properties")
     if (propertiesFile.exists()) propertiesFile.inputStream().use { load(it) }

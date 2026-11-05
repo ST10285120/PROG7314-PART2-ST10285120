@@ -74,13 +74,13 @@ flowchart LR
 ```text
 FitQuest-android/   Kotlin Android app
 fitquest-api/       Node.js and Express REST API
-docs/               Setup, release notes, AI write-up, store material and demo script
+docs/               Release notes, AI write-up and store material
 .github/workflows/  CI and deployment
 ```
 
 ## Run it locally
 
-Full setup, including Firebase, Azure and app signing, is in [docs/SETUP.md](docs/SETUP.md).
+You need JDK 17, Node.js 20 or newer, and the environment variables listed in `fitquest-api/.env.example`.
 
 ```bash
 # API
@@ -95,9 +95,36 @@ cd ../FitQuest-android
 ./gradlew testDebugUnitTest
 ```
 
-## API
+## API reference
 
-The full endpoint list is in [fitquest-api/README.md](fitquest-api/README.md).
+All endpoints are prefixed with `/api`. Every route except `POST /auth/sso` requires
+an `Authorization: Bearer <JWT>` header.
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/auth/sso` | Verify an SSO identity token; create or match the user; return a FitQuest JWT |
+| GET | `/exercises?muscleGroup=&equipment=` | List/filter the shared exercise library |
+| GET | `/users/me/preferences` | Read the signed-in user's settings |
+| PUT | `/users/me/preferences` | Update units, theme, reminder time, rest-timer default |
+| GET | `/users/me/progress` | Weekly volume, best lift per exercise and muscle group split |
+| GET | `/users/me/badges` | List badges the user has earned |
+| GET | `/workouts/suggested?recoveryHours=48` | Rules-based next-workout suggestion |
+| GET | `/users/me` | The signed-in user's profile, XP, level and streak |
+| DELETE | `/users/me` | Permanently delete the account and its data |
+| GET, PUT | `/users/me/routines` | Read or replace the user's custom routines |
+| POST | `/users/me/device-tokens` | Register a phone's FCM token |
+| POST | `/users/me/notifications/test` | Send a test push notification |
+| GET, POST | `/users/me/avatar` | Read or replace the profile picture |
+| GET, POST | `/users/me/photos` | List or upload progress photos |
+| GET | `/users/me/photos/:id/content` | Download one of the user's photos |
+| DELETE | `/users/me/photos/:id` | Delete a progress photo |
+| GET | `/badges` | Every badge with the user's progress |
+| POST | `/workouts/sync` | Idempotently upsert a whole workout from the phone |
+| GET | `/workouts/history?limit=100` | Completed workouts, used to restore a new phone |
+| POST | `/workouts` | Start a workout |
+| POST | `/workouts/:id/exercises` | Add an exercise to a workout |
+| POST | `/workouts/:id/exercises/:weId/sets` | Log a set (server determines if it's a PR) |
+| PATCH | `/workouts/:id/complete` | Finish a workout — triggers XP/level/streak/badge calculation |
 
 ## Project documents
 
@@ -105,8 +132,6 @@ The full endpoint list is in [fitquest-api/README.md](fitquest-api/README.md).
 - [AI use write-up](docs/AI_USAGE.md)
 - [Play Store readiness](docs/PLAY_STORE.md)
 - [Privacy policy](docs/PRIVACY_POLICY.md)
-- [Demo script](docs/DEMO_SCRIPT.md)
-- [Rubric checklist](docs/RUBRIC_CHECKLIST.md)
 
 ## References
 
