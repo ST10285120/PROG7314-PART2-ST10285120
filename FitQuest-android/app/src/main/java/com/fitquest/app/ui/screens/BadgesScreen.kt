@@ -68,7 +68,7 @@ fun BadgesScreen(uiState: BadgesUiState, currentStreak: Int, longestStreak: Int)
         }
 
         when {
-            uiState.isLoading -> item(span = { GridItemSpan(maxLineSpan) }) { LoadingBlock() }
+            uiState.isLoading && uiState.badges.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) { LoadingBlock() }
             uiState.errorMessage != null -> item(span = { GridItemSpan(maxLineSpan) }) {
                 ErrorBanner(stringResource(R.string.badges_error))
             }

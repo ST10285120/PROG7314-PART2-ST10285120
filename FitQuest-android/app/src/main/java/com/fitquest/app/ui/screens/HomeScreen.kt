@@ -37,9 +37,11 @@ fun HomeScreen(
     uiState: HomeUiState,
     profile: UserDto?,
     pendingXp: Int,
+    activeWorkout: WorkoutEntity?,
     units: String,
     recentWorkouts: List<WorkoutEntity>,
     onStartWorkout: () -> Unit,
+    onResumeWorkout: (WorkoutEntity) -> Unit,
     onClickSuggestedWorkout: () -> Unit,
     onClickStreak: () -> Unit,
     onClickWorkout: (String) -> Unit
@@ -65,7 +67,7 @@ fun HomeScreen(
         }
 
         item {
-            FitQuestCard(onClick = if (hasSuggestion) onClickSuggestedWorkout else null) {
+            FitQuestCard(onClick = if (hasSuggestion && activeWorkout == null) onClickSuggestedWorkout else null) {
                 Text(
                     stringResource(R.string.suggested_heading),
                     style = MaterialTheme.typography.labelMedium,
@@ -115,8 +117,8 @@ fun HomeScreen(
 
         item {
             PrimaryButton(
-                text = stringResource(R.string.start_workout),
-                onClick = onStartWorkout,
+                text = stringResource(if (activeWorkout != null) R.string.resume_workout else R.string.start_workout),
+                onClick = { if (activeWorkout != null) onResumeWorkout(activeWorkout) else onStartWorkout() },
                 leadingIcon = { Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp)) }
             )
         }

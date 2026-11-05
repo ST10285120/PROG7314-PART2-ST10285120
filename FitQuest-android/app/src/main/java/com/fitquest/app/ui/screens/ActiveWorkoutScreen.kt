@@ -6,14 +6,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -54,6 +57,7 @@ fun ActiveWorkoutScreen(
     restTimerDefaultSec: Int = 90,
     onPickExercises: (List<ExerciseDto>) -> Unit,
     onLogSet: (reps: Int, weightKg: Double, rpe: Int?) -> Unit,
+    onDeleteSet: (SetEntryEntity) -> Unit,
     onNextExercise: () -> Unit,
     onFinishWorkout: () -> Unit,
     onCancelWorkout: () -> Unit
@@ -65,6 +69,7 @@ fun ActiveWorkoutScreen(
         if (currentExercise != null) showPicker = false
     }
 
+    val haptics = LocalHapticFeedback.current
     var restTimerTrigger by remember { mutableIntStateOf(0) }
     var remainingRestSeconds by remember { mutableStateOf<Int?>(null) }
     LaunchedEffect(restTimerTrigger) {
@@ -75,6 +80,8 @@ fun ActiveWorkoutScreen(
             remainingRestSeconds = remainingRestSeconds?.minus(1)
         }
         remainingRestSeconds = null
+        // The phone may be in a pocket or on a bench, so rest ending can be felt.
+        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
     }
 
     var elapsedSeconds by remember { mutableIntStateOf(0) }
@@ -114,6 +121,7 @@ fun ActiveWorkoutScreen(
             ExercisePicker(
                 exerciseLibrary = exerciseLibrary,
                 modifier = Modifier.weight(1f),
+                onCancel = if (currentExercise != null) ({ showPicker = false }) else null,
                 onConfirm = { selected ->
                     onPickExercises(selected)
                     showPicker = false
@@ -216,7 +224,7 @@ fun ActiveWorkoutScreen(
                 ) {
                     Text(stringResource(R.string.next_exercise))
                     Spacer(Modifier.width(Spacing.sm))
-                    Icon(Icons.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
                 }
                 Text(
                     stringResource(R.string.up_next, nextExerciseName),
@@ -253,12 +261,21 @@ fun ActiveWorkoutScreen(
                                     )
                                 )
                             }
-                            if (set.isPersonalRecord) {
-                                StatusChip(
-                                    text = stringResource(R.string.pr),
-                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.tertiary
-                                )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (set.isPersonalRecord) {
+                                    StatusChip(
+                                        text = stringResource(R.string.pr),
+                                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.tertiary
+                                    )
+                                }
+                                IconButton(onClick = { onDeleteSet(set) }, modifier = Modifier.size(32.dp)) {
+                                    Icon(
+                                        Icons.Filled.Close,
+                                        contentDescription = stringResource(R.string.delete_set),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -338,6 +355,7 @@ private fun StepperField(
 private fun ExercisePicker(
     exerciseLibrary: List<ExerciseDto>,
     modifier: Modifier,
+    onCancel: (() -> Unit)?,
     onConfirm: (List<ExerciseDto>) -> Unit
 ) {
     val selectedIds = remember { mutableStateListOf<String>() }
@@ -388,5 +406,10 @@ private fun ExercisePicker(
                 onConfirm(exerciseLibrary.filter { selectedIds.contains(it._id) })
             }
         )
+        if (onCancel != null) {
+            TextButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
     }
 }

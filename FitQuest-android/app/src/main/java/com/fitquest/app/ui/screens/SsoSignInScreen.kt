@@ -78,7 +78,10 @@ fun SsoSignInScreen(
             }
             if (uiState is AuthUiState.Error) {
                 Spacer(Modifier.height(Spacing.lg))
-                ErrorBanner(stringResource(R.string.error_sign_in))
+                val isDuplicateAccount = uiState.message.contains("409")
+                ErrorBanner(
+                    stringResource(if (isDuplicateAccount) R.string.error_account_exists else R.string.error_sign_in)
+                )
             }
             if (uiState is AuthUiState.SessionExpired) {
                 Spacer(Modifier.height(Spacing.lg))

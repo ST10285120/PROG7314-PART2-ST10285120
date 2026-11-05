@@ -1,5 +1,7 @@
 package com.fitquest.app.ui.screens
 
+import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fingerprint
@@ -8,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -24,7 +27,11 @@ fun BiometricLockScreen(
     onUnlock: () -> Unit,
     onSignOut: () -> Unit
 ) {
+    val activity = LocalContext.current as? Activity
     LaunchedEffect(Unit) { onUnlock() }
+
+    // The app is still composed underneath, so Back must leave it rather than reach it.
+    BackHandler { activity?.moveTaskToBack(true) }
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(

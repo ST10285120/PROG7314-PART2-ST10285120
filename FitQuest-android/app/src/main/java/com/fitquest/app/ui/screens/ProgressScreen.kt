@@ -77,7 +77,10 @@ fun ProgressScreen(
                 FitQuestCard(modifier = Modifier.weight(1f)) {
                     Icon(Icons.Filled.FitnessCenter, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.height(4.dp))
-                    Text("${recentWorkouts.size}", style = MaterialTheme.typography.headlineSmall)
+                    Text(
+                        "${progress?.totalWorkouts?.takeIf { it > 0 } ?: recentWorkouts.size}",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
                     Text(
                         stringResource(R.string.stat_workouts),
                         style = MaterialTheme.typography.bodySmall,
@@ -102,13 +105,17 @@ fun ProgressScreen(
         item { SectionHeader(stringResource(R.string.volume_chart)) }
         item {
             FitQuestCard {
-                val weekly = progress?.volumeByWeek.orEmpty().toSortedMap().values.toList()
-                    .takeLast(WEEKS_SHOWN)
-                    .map { WeightUnits.fromKg(it, units) }
-                if (weekly.isEmpty()) {
+                val weeklyKg = progress?.volumeByWeek.orEmpty().toSortedMap().values.toList().takeLast(WEEKS_SHOWN)
+                if (weeklyKg.isEmpty()) {
                     Text(stringResource(R.string.no_chart_data), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
-                    VolumeLineChart(values = weekly)
+                    Text(
+                        stringResource(R.string.chart_peak, WeightUnits.format(weeklyKg.max(), units)),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(Spacing.xs))
+                    VolumeLineChart(values = weeklyKg.map { WeightUnits.fromKg(it, units) })
                 }
             }
         }
