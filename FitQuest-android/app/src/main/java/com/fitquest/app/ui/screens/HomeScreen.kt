@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.fitquest.app.R
 import com.fitquest.app.data.local.entity.WorkoutEntity
 import com.fitquest.app.data.remote.dto.UserDto
+import com.fitquest.app.ui.components.EmptyState
 import com.fitquest.app.ui.components.FitQuestCard
 import com.fitquest.app.ui.components.exerciseName
 import com.fitquest.app.ui.components.LoadingBlock
@@ -141,12 +142,7 @@ fun HomeScreen(
         item { SectionHeader(stringResource(R.string.recent_workouts)) }
         if (recentWorkouts.isEmpty()) {
             item {
-                FitQuestCard {
-                    Text(
-                        stringResource(R.string.no_workouts),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                EmptyState(icon = Icons.Filled.FitnessCenter, message = stringResource(R.string.no_workouts))
             }
         } else {
             items(recentWorkouts.take(RECENT_WORKOUT_COUNT), key = { it.localId }) { workout ->

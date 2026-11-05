@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,6 +19,7 @@ import com.fitquest.app.R
 import com.fitquest.app.data.remote.dto.ExerciseDto
 import com.fitquest.app.data.remote.dto.RoutineDto
 import com.fitquest.app.ui.components.ConfirmDialog
+import com.fitquest.app.ui.components.EmptyState
 import com.fitquest.app.ui.components.ExerciseSelectionList
 import com.fitquest.app.ui.components.FitQuestCard
 import com.fitquest.app.ui.components.PrimaryButton
@@ -92,9 +94,7 @@ fun RoutinesScreen(
         }
         if (routines.isEmpty()) {
             item {
-                FitQuestCard {
-                    Text(stringResource(R.string.no_routines), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+                EmptyState(icon = Icons.Filled.FitnessCenter, message = stringResource(R.string.no_routines))
             }
         }
         items(routines, key = { it.id }) { routine ->
