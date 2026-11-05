@@ -1,20 +1,25 @@
 package com.fitquest.app.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -26,6 +31,7 @@ import com.fitquest.app.data.local.dao.PersonalRecordRow
 import com.fitquest.app.data.local.entity.WorkoutEntity
 import com.fitquest.app.data.remote.dto.ProgressPhotoDto
 import com.fitquest.app.data.repository.CompletionResult
+import com.fitquest.app.ui.components.ConfirmDialog
 import com.fitquest.app.ui.components.ErrorBanner
 import com.fitquest.app.ui.components.FitQuestCard
 import com.fitquest.app.ui.components.LoadingBlock
@@ -34,6 +40,7 @@ import com.fitquest.app.ui.components.SectionHeader
 import com.fitquest.app.ui.components.Spacing
 import com.fitquest.app.ui.components.SplitBar
 import com.fitquest.app.ui.components.StatusChip
+import com.fitquest.app.ui.components.exerciseName
 import com.fitquest.app.ui.components.VolumeLineChart
 import com.fitquest.app.ui.components.muscleGroupName
 import com.fitquest.app.util.BadgeText
@@ -146,14 +153,14 @@ fun ProgressScreen(
                 }
             }
         } else {
-            items(records, key = { it.first }) { (exerciseName, weightKg) ->
+            items(records, key = { it.first }) { (apiName, weightKg) ->
                 FitQuestCard {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(exerciseName, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleSmall)
+                        Text(exerciseName(apiName), fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleSmall)
                         StatusChip(
                             text = WeightUnits.format(weightKg, units),
                             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
@@ -242,6 +249,19 @@ fun ProgressScreen(
 
 @Composable
 private fun PhotoTile(photo: ProgressPhotoDto, onDelete: () -> Unit) {
+    var confirmDelete by remember { mutableStateOf(false) }
+    if (confirmDelete) {
+        ConfirmDialog(
+            title = stringResource(R.string.delete_photo),
+            message = stringResource(R.string.delete_photo_message),
+            confirmLabel = stringResource(R.string.delete),
+            onConfirm = {
+                confirmDelete = false
+                onDelete()
+            },
+            onDismiss = { confirmDelete = false }
+        )
+    }
     Box(modifier = Modifier.size(136.dp).clip(MaterialTheme.shapes.medium)) {
         AsyncImage(
             model = BuildConfig.API_BASE_URL + photo.path,
@@ -250,7 +270,7 @@ private fun PhotoTile(photo: ProgressPhotoDto, onDelete: () -> Unit) {
             modifier = Modifier.fillMaxSize()
         )
         FilledTonalIconButton(
-            onClick = onDelete,
+            onClick = { confirmDelete = true },
             modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(32.dp)
         ) {
             Icon(
@@ -265,15 +285,21 @@ private fun PhotoTile(photo: ProgressPhotoDto, onDelete: () -> Unit) {
 /** Shown after finishing. If the numbers are not confirmed yet, it says they are an estimate. */
 @Composable
 fun WorkoutSummaryScreen(completion: CompletionResult?, onDone: () -> Unit) {
+    // A short pop gives the end of a session the feel of completing a quest.
+    val trophyScale = remember { Animatable(0.4f) }
+    LaunchedEffect(Unit) {
+        trophyScale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
+    }
+
     Column(
-        modifier = Modifier.fillMaxSize().padding(Spacing.lg),
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Spacing.lg),
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
             Icons.Filled.EmojiEvents,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.tertiary,
-            modifier = Modifier.size(56.dp)
+            modifier = Modifier.size(72.dp).scale(trophyScale.value)
         )
         Spacer(Modifier.height(Spacing.sm))
         Text(stringResource(R.string.workout_complete), style = MaterialTheme.typography.headlineMedium)
@@ -311,6 +337,33 @@ fun WorkoutSummaryScreen(completion: CompletionResult?, onDone: () -> Unit) {
                             style = MaterialTheme.typography.headlineSmall
                         )
                     }
+                }
+                Spacer(Modifier.height(Spacing.md))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Column {
+                        Text(
+                            stringResource(R.string.level),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text("${completion.newLevel}", style = MaterialTheme.typography.headlineSmall)
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            stringResource(R.string.personal_records),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text("${completion.personalRecords}", style = MaterialTheme.typography.headlineSmall)
+                    }
+                }
+                if (completion.leveledUp) {
+                    Spacer(Modifier.height(Spacing.sm))
+                    StatusChip(
+                        text = stringResource(R.string.notification_level_title),
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.tertiary
+                    )
                 }
                 if (completion.pendingSync) {
                     Spacer(Modifier.height(Spacing.md))
