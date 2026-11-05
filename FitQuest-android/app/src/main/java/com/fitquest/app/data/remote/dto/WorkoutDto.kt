@@ -77,6 +77,16 @@ data class SuggestedWorkoutResponse(
     val focusMuscleGroups: List<String>? = null
 )
 
+/** A saved routine. The id is created on the phone so it can be made offline. */
+data class RoutineDto(
+    val id: String,
+    val name: String,
+    val exercises: List<SuggestedWorkoutExerciseDto>
+)
+
+/** The whole routine list, which is always read and saved together. */
+data class RoutinesPayload(val routines: List<RoutineDto>)
+
 /** Dashboard data from GET /api/users/me/progress, covering every device. */
 data class ProgressResponse(
     val volumeByWeek: Map<String, Double>,

@@ -7,6 +7,7 @@ import com.fitquest.app.viewmodel.AuthViewModel
 import com.fitquest.app.viewmodel.BadgesViewModel
 import com.fitquest.app.viewmodel.HomeViewModel
 import com.fitquest.app.viewmodel.ProgressViewModel
+import com.fitquest.app.viewmodel.RoutinesViewModel
 import com.fitquest.app.viewmodel.SettingsViewModel
 import com.fitquest.app.viewmodel.WorkoutDetailViewModel
 import com.fitquest.app.viewmodel.WorkoutViewModel
@@ -34,6 +35,9 @@ class ViewModelFactory(private val container: AppContainer) : ViewModelProvider.
 
             modelClass.isAssignableFrom(ProgressViewModel::class.java) ->
                 ProgressViewModel(container.workoutRepository, container.photoRepository) as T
+
+            modelClass.isAssignableFrom(RoutinesViewModel::class.java) ->
+                RoutinesViewModel(container.routineRepository, container.workoutRepository) as T
 
             modelClass.isAssignableFrom(SettingsViewModel::class.java) ->
                 SettingsViewModel(

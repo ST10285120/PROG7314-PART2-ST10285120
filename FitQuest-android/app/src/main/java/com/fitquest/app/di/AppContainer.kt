@@ -13,6 +13,7 @@ import com.fitquest.app.data.repository.AuthRepository
 import com.fitquest.app.data.repository.PhotoRepository
 import com.fitquest.app.data.repository.PreferencesRepository
 import com.fitquest.app.data.repository.ProfileRepository
+import com.fitquest.app.data.repository.RoutineRepository
 import com.fitquest.app.data.repository.WorkoutRepository
 import com.fitquest.app.sync.ConnectivityObserver
 import com.fitquest.app.sync.SyncScheduler
@@ -39,6 +40,7 @@ class AppContainer(context: Context) {
     val preferencesRepository: PreferencesRepository by lazy { PreferencesRepository(api, localCache) }
     val profileRepository: ProfileRepository by lazy { ProfileRepository(api, localCache) }
     val photoRepository: PhotoRepository by lazy { PhotoRepository(api) }
+    val routineRepository: RoutineRepository by lazy { RoutineRepository(api, localCache) }
     val workoutRepository: WorkoutRepository by lazy {
         WorkoutRepository(
             api = api,

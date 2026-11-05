@@ -18,6 +18,15 @@ interface FitQuestApi {
     @GET("api/users/me")
     suspend fun getProfile(): Response<UserDto>
 
+    @DELETE("api/users/me")
+    suspend fun deleteAccount(): Response<Unit>
+
+    @GET("api/users/me/routines")
+    suspend fun getRoutines(): Response<RoutinesPayload>
+
+    @PUT("api/users/me/routines")
+    suspend fun saveRoutines(@Body payload: RoutinesPayload): Response<RoutinesPayload>
+
     @GET("api/exercises")
     suspend fun listExercises(
         @Query("muscleGroup") muscleGroup: String? = null,
