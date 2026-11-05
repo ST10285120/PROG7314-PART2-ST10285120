@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 
+/** An exercise within a workout. The name is stored so history displays offline. */
 @Entity(
     tableName = "workout_exercises",
     foreignKeys = [
@@ -24,6 +25,7 @@ data class WorkoutExerciseEntity(
     val orderIndex: Int
 )
 
+/** A logged set, always in kg. isPersonalRecord is an estimate until the server confirms it. */
 @Entity(
     tableName = "set_entries",
     foreignKeys = [

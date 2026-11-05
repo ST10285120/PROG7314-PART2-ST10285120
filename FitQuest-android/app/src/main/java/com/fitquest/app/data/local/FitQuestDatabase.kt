@@ -11,6 +11,7 @@ import com.fitquest.app.data.local.entity.SetEntryEntity
 import com.fitquest.app.data.local.entity.WorkoutEntity
 import com.fitquest.app.data.local.entity.WorkoutExerciseEntity
 
+/** The offline-first store. See: Google (2026) Save data using Room. https://developer.android.com/training/data-storage/room */
 @Database(
     entities = [WorkoutEntity::class, WorkoutExerciseEntity::class, SetEntryEntity::class],
     version = 1,

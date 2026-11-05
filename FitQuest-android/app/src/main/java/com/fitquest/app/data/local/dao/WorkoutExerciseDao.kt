@@ -5,6 +5,7 @@ import com.fitquest.app.data.local.entity.SetEntryEntity
 import com.fitquest.app.data.local.entity.WorkoutExerciseEntity
 import kotlinx.coroutines.flow.Flow
 
+/** Room access to the exercises inside a workout. */
 @Dao
 interface WorkoutExerciseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -20,6 +21,7 @@ interface WorkoutExerciseDao {
     suspend fun getByLocalId(localId: String): WorkoutExerciseEntity?
 }
 
+/** Room access to logged sets. */
 @Dao
 interface SetEntryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -30,6 +32,40 @@ interface SetEntryDao {
 
     @Query("SELECT * FROM set_entries WHERE workoutExerciseLocalId = :weLocalId ORDER BY setNumber ASC")
     suspend fun getForWorkoutExercise(weLocalId: String): List<SetEntryEntity>
+
+    /** Replaces the local PR estimate with the server's decision. */
+    @Query("UPDATE set_entries SET isPersonalRecord = :isPersonalRecord WHERE localId = :localId")
+    suspend fun updatePersonalRecord(localId: String, isPersonalRecord: Boolean)
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM set_entries
+        WHERE workoutExerciseLocalId IN (
+            SELECT localId FROM workout_exercises WHERE workoutLocalId = :workoutLocalId
+        )
+        """
+    )
+    fun observeSetCount(workoutLocalId: String): Flow<Int>
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM set_entries
+        WHERE isPersonalRecord = 1 AND workoutExerciseLocalId IN (
+            SELECT localId FROM workout_exercises WHERE workoutLocalId = :workoutLocalId
+        )
+        """
+    )
+    suspend fun countPersonalRecords(workoutLocalId: String): Int
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM set_entries
+        WHERE workoutExerciseLocalId IN (
+            SELECT localId FROM workout_exercises WHERE workoutLocalId = :workoutLocalId
+        )
+        """
+    )
+    suspend fun countSets(workoutLocalId: String): Int
 
     @Query("SELECT MAX(weightKg) FROM set_entries WHERE workoutExerciseLocalId IN (SELECT localId FROM workout_exercises WHERE exerciseId = :exerciseId)")
     suspend fun getBestWeightForExercise(exerciseId: String): Double?
@@ -58,6 +94,7 @@ interface SetEntryDao {
     fun observeAllPersonalRecords(): Flow<List<PersonalRecordRow>>
 }
 
+/** A personal record joined with its exercise name, for offline display. */
 data class PersonalRecordRow(
     val exerciseName: String,
     val weightKg: Double,
