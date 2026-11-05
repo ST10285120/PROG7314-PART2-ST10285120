@@ -3,6 +3,7 @@ package com.fitquest.app.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -18,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -26,12 +26,13 @@ import com.fitquest.app.R
 import com.fitquest.app.data.local.entity.SetEntryEntity
 import com.fitquest.app.data.local.entity.WorkoutExerciseEntity
 import com.fitquest.app.data.remote.dto.ExerciseDto
+import com.fitquest.app.ui.components.ExerciseSelectionList
 import com.fitquest.app.ui.components.FitQuestCard
 import com.fitquest.app.ui.components.PrimaryButton
 import com.fitquest.app.ui.components.SectionHeader
 import com.fitquest.app.ui.components.Spacing
 import com.fitquest.app.ui.components.StatusChip
-import com.fitquest.app.ui.components.muscleGroupName
+import com.fitquest.app.ui.components.exerciseName
 import com.fitquest.app.util.WeightUnits
 import kotlinx.coroutines.delay
 
@@ -62,8 +63,8 @@ fun ActiveWorkoutScreen(
     onFinishWorkout: () -> Unit,
     onCancelWorkout: () -> Unit
 ) {
-    var reps by remember { mutableStateOf("8") }
-    var weight by remember(units) { mutableStateOf(if (units == WeightUnits.POUNDS) "45" else "20") }
+    var reps by rememberSaveable { mutableStateOf("8") }
+    var weight by rememberSaveable(units) { mutableStateOf(if (units == WeightUnits.POUNDS) "45" else "20") }
     var showPicker by remember { mutableStateOf(currentExercise == null) }
     LaunchedEffect(currentExercise?.localId) {
         if (currentExercise != null) showPicker = false
@@ -74,10 +75,14 @@ fun ActiveWorkoutScreen(
     var remainingRestSeconds by remember { mutableStateOf<Int?>(null) }
     LaunchedEffect(restTimerTrigger) {
         if (restTimerTrigger == 0) return@LaunchedEffect
+        // Counting to a fixed end time keeps the timer right if the app is backgrounded.
+        val endsAt = System.currentTimeMillis() + restTimerDefaultSec * 1000L
         remainingRestSeconds = restTimerDefaultSec
         while ((remainingRestSeconds ?: 0) > 0) {
-            delay(1000)
-            remainingRestSeconds = remainingRestSeconds?.minus(1)
+            delay(250)
+            if ((remainingRestSeconds ?: 0) > 0) {
+                remainingRestSeconds = ((endsAt - System.currentTimeMillis() + 999) / 1000).toInt().coerceAtLeast(0)
+            }
         }
         remainingRestSeconds = null
         // The phone may be in a pocket or on a bench, so rest ending can be felt.
@@ -135,7 +140,7 @@ fun ActiveWorkoutScreen(
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Text(
-                    currentExercise.exerciseName,
+                    exerciseName(currentExercise.exerciseName),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
@@ -227,7 +232,7 @@ fun ActiveWorkoutScreen(
                     Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
                 }
                 Text(
-                    stringResource(R.string.up_next, nextExerciseName),
+                    stringResource(R.string.up_next, exerciseName(nextExerciseName)),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = Spacing.xs)
@@ -269,7 +274,7 @@ fun ActiveWorkoutScreen(
                                         contentColor = MaterialTheme.colorScheme.tertiary
                                     )
                                 }
-                                IconButton(onClick = { onDeleteSet(set) }, modifier = Modifier.size(32.dp)) {
+                                IconButton(onClick = { onDeleteSet(set) }, modifier = Modifier.size(40.dp)) {
                                     Icon(
                                         Icons.Filled.Close,
                                         contentDescription = stringResource(R.string.delete_set),
@@ -362,48 +367,19 @@ private fun ExercisePicker(
 
     Column(modifier = modifier.fillMaxWidth()) {
         SectionHeader(stringResource(R.string.choose_exercises))
-        if (exerciseLibrary.isEmpty()) {
-            Text(
-                stringResource(R.string.library_unavailable),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            items(exerciseLibrary, key = { it._id }) { exercise ->
-                val isSelected = selectedIds.contains(exercise._id)
-                FitQuestCard(
-                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-                    onClick = {
-                        if (isSelected) selectedIds.remove(exercise._id) else selectedIds.add(exercise._id)
-                    }
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                        Checkbox(
-                            checked = isSelected,
-                            onCheckedChange = { checked ->
-                                if (checked) selectedIds.add(exercise._id) else selectedIds.remove(exercise._id)
-                            }
-                        )
-                        Spacer(Modifier.width(Spacing.xs))
-                        Column {
-                            Text(exercise.name, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleSmall)
-                            Text(
-                                "${muscleGroupName(exercise.muscleGroup)} · ${exercise.equipment}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        ExerciseSelectionList(
+            exerciseLibrary = exerciseLibrary,
+            selectedIds = selectedIds,
+            modifier = Modifier.weight(1f)
+        )
         Spacer(Modifier.height(Spacing.sm))
         PrimaryButton(
             text = if (selectedIds.isEmpty()) stringResource(R.string.select_to_continue)
             else stringResource(R.string.add_to_workout, selectedIds.size),
             enabled = selectedIds.isNotEmpty(),
             onClick = {
-                onConfirm(exerciseLibrary.filter { selectedIds.contains(it._id) })
+                val libraryById = exerciseLibrary.associateBy { it._id }
+                onConfirm(selectedIds.mapNotNull { libraryById[it] })
             }
         )
         if (onCancel != null) {
