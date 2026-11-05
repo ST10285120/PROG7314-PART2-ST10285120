@@ -63,6 +63,20 @@ describe('gamificationService', () => {
       expect(result.longestStreak).toBe(5);
     });
 
+    it('keeps the streak when exactly one calendar day is missed', () => {
+      const user = { currentStreak: 3, longestStreak: 3, lastWorkoutDate: new Date('2026-01-10T06:00:00Z') };
+      const result = updateStreak(user, new Date('2026-01-12T23:00:00Z'));
+      expect(result.currentStreak).toBe(4);
+    });
+
+    it('ignores a late-synced workout dated before the last counted one', () => {
+      const lastWorkoutDate = new Date('2026-01-12T18:00:00Z');
+      const user = { currentStreak: 4, longestStreak: 4, lastWorkoutDate };
+      const result = updateStreak(user, new Date('2026-01-10T18:00:00Z'));
+      expect(result.currentStreak).toBe(4);
+      expect(result.lastWorkoutDate).toEqual(lastWorkoutDate);
+    });
+
     it('resets the streak to 1 after a gap beyond the grace window', () => {
       const user = { currentStreak: 6, longestStreak: 6, lastWorkoutDate: new Date('2026-01-10T18:00:00Z') };
       const result = updateStreak(user, new Date('2026-01-14T18:00:00Z'));
