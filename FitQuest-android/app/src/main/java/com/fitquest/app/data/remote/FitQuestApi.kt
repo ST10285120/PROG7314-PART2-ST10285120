@@ -1,13 +1,22 @@
 package com.fitquest.app.data.remote
 
 import com.fitquest.app.data.remote.dto.*
+import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.*
 
+/**
+ * Retrofit definition of the FitQuest REST API.
+ *
+ * Reference: Square (2026) Retrofit. https://square.github.io/retrofit/
+ */
 interface FitQuestApi {
 
     @POST("api/auth/sso")
     suspend fun ssoSignIn(@Body request: SsoRequest): Response<SsoResponse>
+
+    @GET("api/users/me")
+    suspend fun getProfile(): Response<UserDto>
 
     @GET("api/exercises")
     suspend fun listExercises(
@@ -24,33 +33,35 @@ interface FitQuestApi {
     @GET("api/users/me/progress")
     suspend fun getProgress(): Response<ProgressResponse>
 
-    @GET("api/users/me/badges")
-    suspend fun getBadges(): Response<List<BadgeDto>>
+    @GET("api/badges")
+    suspend fun getBadgeCatalog(): Response<List<BadgeDto>>
 
     @GET("api/workouts/suggested")
     suspend fun getSuggestedWorkout(
         @Query("recoveryHours") recoveryHours: Int = 48
     ): Response<SuggestedWorkoutResponse>
 
-    @POST("api/workouts")
-    suspend fun createWorkout(@Body request: CreateWorkoutRequest): Response<CreateWorkoutResponse>
+    @POST("api/workouts/sync")
+    suspend fun syncWorkout(@Body request: SyncWorkoutRequest): Response<SyncWorkoutResponse>
 
-    @POST("api/workouts/{id}/exercises")
-    suspend fun addExercise(
-        @Path("id") workoutId: String,
-        @Body request: AddExerciseRequest
-    ): Response<AddExerciseResponse>
+    @GET("api/workouts/history")
+    suspend fun getWorkoutHistory(): Response<List<HistoryWorkoutDto>>
 
-    @POST("api/workouts/{id}/exercises/{weId}/sets")
-    suspend fun logSet(
-        @Path("id") workoutId: String,
-        @Path("weId") workoutExerciseId: String,
-        @Body request: LogSetRequest
-    ): Response<LogSetResponse>
+    @POST("api/users/me/device-tokens")
+    suspend fun registerDeviceToken(@Body request: DeviceTokenRequest): Response<Unit>
 
-    @PATCH("api/workouts/{id}/complete")
-    suspend fun completeWorkout(
-        @Path("id") workoutId: String,
-        @Body request: CompleteWorkoutRequest
-    ): Response<CompleteWorkoutResponse>
+    @POST("api/users/me/notifications/test")
+    suspend fun sendTestNotification(): Response<TestNotificationResponse>
+
+    @POST("api/users/me/avatar")
+    suspend fun uploadAvatar(@Body image: RequestBody): Response<UserDto>
+
+    @GET("api/users/me/photos")
+    suspend fun listPhotos(): Response<List<ProgressPhotoDto>>
+
+    @POST("api/users/me/photos")
+    suspend fun uploadPhoto(@Body image: RequestBody): Response<ProgressPhotoDto>
+
+    @DELETE("api/users/me/photos/{id}")
+    suspend fun deletePhoto(@Path("id") photoId: String): Response<Unit>
 }
