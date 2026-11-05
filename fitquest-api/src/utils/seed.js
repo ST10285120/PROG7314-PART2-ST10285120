@@ -1,3 +1,6 @@
+/**
+ * Seeds the exercise library and badge definitions.
+ */
 require('dotenv').config();
 const { connectDb, disconnectDb } = require('../config/db');
 const Exercise = require('../models/Exercise');
@@ -32,15 +35,25 @@ const badges = [
   { name: '10 PRs', description: 'Set 10 personal records.', criteriaType: 'PERSONAL_RECORD_COUNT', criteriaValue: 10 },
 ];
 
+/**
+ * Upserts by name so re-running keeps existing ids. Deleting and re-inserting
+ * would orphan every workout that already references an exercise.
+ */
+async function upsertByName(Model, items) {
+  await Model.bulkWrite(
+    items.map((item) => ({
+      updateOne: { filter: { name: item.name }, update: { $set: item }, upsert: true },
+    }))
+  );
+}
+
 async function seed() {
   await connectDb(process.env.MONGO_URI);
 
-  await Exercise.deleteMany({});
-  await Exercise.insertMany(exercises);
+  await upsertByName(Exercise, exercises);
   console.log(`Seeded ${exercises.length} exercises`);
 
-  await Badge.deleteMany({});
-  await Badge.insertMany(badges);
+  await upsertByName(Badge, badges);
   console.log(`Seeded ${badges.length} badges`);
 
   await disconnectDb();
