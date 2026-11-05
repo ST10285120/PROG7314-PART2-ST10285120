@@ -2,11 +2,13 @@ package com.fitquest.app.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /** An exercise within a workout. The name is stored so history displays offline. */
 @Entity(
     tableName = "workout_exercises",
+    indices = [Index("workoutLocalId")],
     foreignKeys = [
         ForeignKey(
             entity = WorkoutEntity::class,
@@ -28,6 +30,7 @@ data class WorkoutExerciseEntity(
 /** A logged set, always in kg. isPersonalRecord is an estimate until the server confirms it. */
 @Entity(
     tableName = "set_entries",
+    indices = [Index("workoutExerciseLocalId")],
     foreignKeys = [
         ForeignKey(
             entity = WorkoutExerciseEntity::class,
