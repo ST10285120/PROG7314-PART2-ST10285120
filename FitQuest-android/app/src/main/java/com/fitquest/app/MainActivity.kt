@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -230,22 +231,26 @@ fun FitQuestRoot(
                 else -> isSystemInDarkTheme()
             }
             FitQuestTheme(useDarkTheme = useDark) {
-                if (mustUnlock) {
-                    BiometricLockScreen(
-                        showError = unlockFailed,
-                        onUnlock = onRequestUnlock,
-                        onSignOut = { authViewModel.signOut() }
-                    )
-                } else {
+                // The lock covers the app instead of replacing it. Removing the app would
+                // reset navigation and throw the user out of a workout in progress.
+                Box(modifier = Modifier.fillMaxSize()) {
                     MainAppScaffold(
                         factory = factory,
                         container = container,
                         settingsViewModel = settingsViewModel,
                         settingsState = settingsState,
+                        isLocked = mustUnlock,
                         onSignedOut = { authViewModel.signOut() },
                         biometricEnabled = biometricEnabled,
                         onBiometricChange = onBiometricChange
                     )
+                    if (mustUnlock) {
+                        BiometricLockScreen(
+                            showError = unlockFailed,
+                            onUnlock = onRequestUnlock,
+                            onSignOut = { authViewModel.signOut() }
+                        )
+                    }
                 }
             }
         }
@@ -280,6 +285,7 @@ fun MainAppScaffold(
     container: AppContainer,
     settingsViewModel: SettingsViewModel,
     settingsState: SettingsUiState,
+    isLocked: Boolean,
     onSignedOut: () -> Unit,
     biometricEnabled: Boolean,
     onBiometricChange: (Boolean) -> Unit
@@ -301,6 +307,7 @@ fun MainAppScaffold(
         if (isOnline && wasOffline) {
             Log.i("MainAppScaffold", "Back online; refreshing")
             homeViewModel.refresh()
+            settingsViewModel.load()
         }
         wasOffline = !isOnline
     }
@@ -308,12 +315,13 @@ fun MainAppScaffold(
     LaunchedEffect(settingsState.signedOut) {
         if (settingsState.signedOut) {
             settingsViewModel.consumeSignedOut()
+            homeViewModel.markSessionEnded()
             onSignedOut()
         }
     }
     // These ViewModels belong to the Activity, so reload them for each signed-in session.
     LaunchedEffect(Unit) {
-        homeViewModel.refresh()
+        homeViewModel.ensureLoaded()
         settingsViewModel.load()
     }
     LaunchedEffect(settingsState.preferences.reminderTime) {
@@ -326,8 +334,8 @@ fun MainAppScaffold(
     val notificationPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted -> Log.d("MainAppScaffold", "Notification permission granted=$granted") }
-    LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+    LaunchedEffect(isLocked) {
+        if (!isLocked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
@@ -357,7 +365,7 @@ fun MainAppScaffold(
                     navigationIcon = {
                         if (topBar.showBack) {
                             IconButton(onClick = { navController.popBackStack() }) {
-                                Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                             }
                         }
                     },
@@ -388,17 +396,23 @@ fun MainAppScaffold(
                 val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
                 val recent by homeViewModel.recentWorkouts.collectAsStateWithLifecycle()
                 val pendingXp by homeViewModel.pendingXp.collectAsStateWithLifecycle()
+                val activeWorkout by homeViewModel.activeWorkout.collectAsStateWithLifecycle()
                 val defaultTitle = stringResource(R.string.default_workout_title)
                 val suggestedTitle = stringResource(R.string.suggested_workout_title)
                 HomeScreen(
                     uiState = uiState,
                     profile = profile,
                     pendingXp = pendingXp,
+                    activeWorkout = activeWorkout,
                     units = units,
                     recentWorkouts = recent,
                     onStartWorkout = {
                         workoutViewModel.resetForNewWorkout()
                         workoutViewModel.startWorkout(defaultTitle)
+                        navController.navigate(Destination.ActiveWorkout.route)
+                    },
+                    onResumeWorkout = { workout ->
+                        workoutViewModel.resumeWorkout(workout)
                         navController.navigate(Destination.ActiveWorkout.route)
                     },
                     onClickSuggestedWorkout = {
@@ -443,8 +457,11 @@ fun MainAppScaffold(
                     },
                     onLogSet = { reps, weightKg, rpe ->
                         val exerciseId = currentExercise?.exerciseId ?: return@ActiveWorkoutScreen
-                        workoutViewModel.logSet(exerciseId, setsForCurrent.size + 1, reps, weightKg, rpe)
+                        // Deleting a set can leave a gap, so the size is not a safe next number.
+                        val nextSetNumber = (setsForCurrent.maxOfOrNull { it.setNumber } ?: 0) + 1
+                        workoutViewModel.logSet(exerciseId, nextSetNumber, reps, weightKg, rpe)
                     },
+                    onDeleteSet = { set -> workoutViewModel.deleteSet(set) },
                     onNextExercise = { workoutViewModel.goToNextExercise() },
                     onFinishWorkout = {
                         workoutViewModel.finishWorkout()
@@ -477,6 +494,8 @@ fun MainAppScaffold(
                 val progressState by progressViewModel.uiState.collectAsStateWithLifecycle()
                 val recent by progressViewModel.recentWorkouts.collectAsStateWithLifecycle()
                 val records by progressViewModel.localRecords.collectAsStateWithLifecycle()
+                // Runs each time the tab opens, so a finished workout appears straight away.
+                LaunchedEffect(isOnline) { if (isOnline) progressViewModel.load() }
                 val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
                     if (uri != null) {
                         scope.launch {
@@ -516,6 +535,7 @@ fun MainAppScaffold(
             composable(Destination.Badges.route) {
                 val badgesViewModel: BadgesViewModel = viewModel(factory = factory)
                 val badgesState by badgesViewModel.uiState.collectAsStateWithLifecycle()
+                LaunchedEffect(isOnline) { if (isOnline) badgesViewModel.load() }
                 BadgesScreen(
                     uiState = badgesState,
                     currentStreak = profile?.currentStreak ?: 0,
