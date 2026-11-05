@@ -1,11 +1,19 @@
 *.iml
 .gradle/
+.kotlin/
 /local.properties
 /.idea/
 .DS_Store
 /build
 /app/build
+/app/release
 /captures
 .externalNativeBuild
 .cxx
 local.properties
+
+# Secrets: these must never be committed
+keystore.properties
+*.jks
+*.keystore
+app/google-services.json
