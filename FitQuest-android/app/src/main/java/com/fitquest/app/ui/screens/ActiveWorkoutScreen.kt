@@ -29,9 +29,11 @@ import com.fitquest.app.data.remote.dto.ExerciseDto
 import com.fitquest.app.ui.components.ExerciseSelectionList
 import com.fitquest.app.ui.components.FitQuestCard
 import com.fitquest.app.ui.components.PrimaryButton
+import com.fitquest.app.ui.components.RestTimerRing
 import com.fitquest.app.ui.components.SectionHeader
 import com.fitquest.app.ui.components.Spacing
 import com.fitquest.app.ui.components.StatusChip
+import com.fitquest.app.ui.components.WorkoutHero
 import com.fitquest.app.ui.components.exerciseName
 import com.fitquest.app.util.WeightUnits
 import kotlinx.coroutines.delay
@@ -50,6 +52,8 @@ private const val WEIGHT_STEP_LB = 5.0
 fun ActiveWorkoutScreen(
     exerciseLibrary: List<ExerciseDto>,
     currentExercise: WorkoutExerciseEntity?,
+    exercisePosition: Int,
+    exerciseCount: Int,
     nextExerciseName: String?,
     setsForCurrentExercise: List<SetEntryEntity>,
     totalSets: Int,
@@ -107,7 +111,8 @@ fun ActiveWorkoutScreen(
     val weightStep = if (units == WeightUnits.POUNDS) WEIGHT_STEP_LB else WEIGHT_STEP_KG
 
     Column(modifier = Modifier.fillMaxSize().padding(Spacing.md)) {
-        if (workoutStartedAt != null) {
+        val elapsedText = "%d:%02d:%02d".format(elapsedSeconds / 3600, (elapsedSeconds % 3600) / 60, elapsedSeconds % 60)
+        if (workoutStartedAt != null && (showPicker || currentExercise == null)) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.sm),
                 horizontalArrangement = Arrangement.Center,
@@ -115,10 +120,7 @@ fun ActiveWorkoutScreen(
             ) {
                 Icon(Icons.Filled.Timer, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
-                Text(
-                    "%d:%02d:%02d".format(elapsedSeconds / 3600, (elapsedSeconds % 3600) / 60, elapsedSeconds % 60),
-                    style = MaterialTheme.typography.titleMedium
-                )
+                Text(elapsedText, style = MaterialTheme.typography.titleMedium)
             }
         }
 
@@ -133,18 +135,13 @@ fun ActiveWorkoutScreen(
                 }
             )
         } else {
-            FitQuestCard(containerColor = MaterialTheme.colorScheme.primaryContainer) {
-                Text(
-                    stringResource(R.string.current_exercise),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-                Text(
-                    exerciseName(currentExercise.exerciseName),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
+            WorkoutHero(
+                exerciseName = exerciseName(currentExercise.exerciseName),
+                position = exercisePosition,
+                total = exerciseCount,
+                setsLogged = setsForCurrentExercise.size,
+                elapsed = elapsedText
+            )
             Spacer(Modifier.height(Spacing.sm))
 
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
@@ -198,26 +195,11 @@ fun ActiveWorkoutScreen(
 
             remainingRestSeconds?.let { seconds ->
                 Spacer(Modifier.height(Spacing.sm))
-                FitQuestCard(containerColor = MaterialTheme.colorScheme.secondaryContainer) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Filled.Timer,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(Modifier.width(Spacing.sm))
-                        Text(
-                            stringResource(R.string.rest_timer, seconds / 60, seconds % 60),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.weight(1f)
-                        )
-                        TextButton(onClick = { remainingRestSeconds = 0 }) {
-                            Text(stringResource(R.string.skip_rest))
-                        }
-                    }
-                }
+                RestTimerRing(
+                    seconds = seconds,
+                    totalSeconds = restTimerDefaultSec,
+                    onSkip = { remainingRestSeconds = 0 }
+                )
             }
 
             if (nextExerciseName != null) {

@@ -480,6 +480,8 @@ fun MainAppScaffold(
                 ActiveWorkoutScreen(
                     exerciseLibrary = uiState.exerciseLibrary,
                     currentExercise = currentExercise,
+                    exercisePosition = currentIndex + 1,
+                    exerciseCount = exercisesInWorkout.size,
                     nextExerciseName = nextExercise?.exerciseName,
                     setsForCurrentExercise = setsForCurrent,
                     totalSets = totalSets,
