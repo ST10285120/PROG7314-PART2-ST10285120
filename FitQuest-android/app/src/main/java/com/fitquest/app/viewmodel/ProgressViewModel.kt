@@ -53,7 +53,7 @@ class ProgressViewModel(
             _uiState.value = _uiState.value.copy(isLoading = true)
             val progress = workoutRepository.getProgress()
             _uiState.value = _uiState.value.copy(
-                progress = progress.getOrNull() ?: _uiState.value.progress,
+                progress = progress.getOrNull() ?: _uiState.value.progress ?: workoutRepository.getCachedProgress(),
                 isOfflineData = progress.isFailure,
                 isLoading = false
             )

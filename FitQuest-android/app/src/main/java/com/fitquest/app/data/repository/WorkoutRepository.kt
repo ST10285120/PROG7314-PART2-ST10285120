@@ -29,7 +29,9 @@ data class CompletionResult(
     val newLevel: Int,
     val streak: Int,
     val badgeNames: List<String>,
-    val pendingSync: Boolean
+    val pendingSync: Boolean,
+    val personalRecords: Int = 0,
+    val leveledUp: Boolean = false
 )
 
 data class WorkoutExerciseDetail(
@@ -179,6 +181,7 @@ class WorkoutRepository(
      */
     suspend fun completeWorkout(workoutLocalId: String): CompletionResult {
         val workout = requireNotNull(workoutDao.getByLocalId(workoutLocalId))
+        val previousLevel = profileRepository.profile.value?.level
         val estimatedXp = estimateXp(workoutLocalId)
         workoutDao.update(
             workout.copy(
@@ -197,7 +200,9 @@ class WorkoutRepository(
                 newLevel = completion.newLevel,
                 streak = completion.streak,
                 badgeNames = completion.badgesEarned.map { it.name },
-                pendingSync = false
+                pendingSync = false,
+                personalRecords = setEntryDao.countPersonalRecords(workoutLocalId),
+                leveledUp = previousLevel != null && completion.newLevel > previousLevel
             )
         }
 
@@ -209,7 +214,8 @@ class WorkoutRepository(
             newLevel = profile?.level ?: 1,
             streak = profile?.currentStreak ?: 0,
             badgeNames = emptyList(),
-            pendingSync = true
+            pendingSync = true,
+            personalRecords = setEntryDao.countPersonalRecords(workoutLocalId)
         )
     }
 
@@ -398,19 +404,35 @@ class WorkoutRepository(
     suspend fun getBadgeCatalog(): Result<List<BadgeDto>> = try {
         val res = api.getBadgeCatalog()
         val body = res.body()
-        if (res.isSuccessful && body != null) Result.success(body)
-        else Result.failure(Exception("Failed to load badges (HTTP ${res.code()})"))
+        if (res.isSuccessful && body != null) {
+            localCache.saveBadges(body)
+            Result.success(body)
+        } else {
+            cachedOr(localCache.getBadges(), "Failed to load badges (HTTP ${res.code()})")
+        }
     } catch (e: Exception) {
-        Result.failure(e)
+        cachedOr(localCache.getBadges(), e.message ?: "Network error")
     }
 
     suspend fun getProgress(): Result<ProgressResponse> = try {
         val res = api.getProgress()
         val body = res.body()
-        if (res.isSuccessful && body != null) Result.success(body)
-        else Result.failure(Exception("Failed to load progress (HTTP ${res.code()})"))
+        if (res.isSuccessful && body != null) {
+            localCache.saveProgress(body)
+            Result.success(body)
+        } else {
+            Result.failure(Exception("Failed to load progress (HTTP ${res.code()})"))
+        }
     } catch (e: Exception) {
         Result.failure(e)
+    }
+
+    /** The last progress data seen, shown with a notice while offline. */
+    fun getCachedProgress(): ProgressResponse? = localCache.getProgress()
+
+    /** Wipes this phone after the account itself has been deleted. */
+    suspend fun clearLocalData() {
+        workoutDao.deleteAll()
     }
 
     /**
