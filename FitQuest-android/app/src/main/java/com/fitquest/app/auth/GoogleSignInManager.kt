@@ -10,11 +10,19 @@ import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 
+/** Outcome of the provider's sign-in step, before the API is involved. */
 sealed class SsoResult {
     data class Success(val idToken: String) : SsoResult()
     data class Failure(val message: String) : SsoResult()
 }
 
+/**
+ * Requests a Google ID token through Credential Manager. The API verifies that token
+ * with Google, so the app never handles a password.
+ *
+ * Reference: Google (2026) Authenticate users with Sign in with Google.
+ * https://developer.android.com/identity/sign-in/credential-manager-siwg
+ */
 class GoogleSignInManager(private val context: Context) {
 
     private val credentialManager = CredentialManager.create(context)
