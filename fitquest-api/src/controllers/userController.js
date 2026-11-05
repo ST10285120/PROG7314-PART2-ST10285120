@@ -12,6 +12,9 @@ const { toUserResponse } = require('../utils/userResponse');
 const REMINDER_TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 const MIN_REST_SECONDS = 10;
 const MAX_REST_SECONDS = 600;
+const MAX_ROUTINES = 50;
+const MAX_ROUTINE_NAME = 60;
+const MAX_ROUTINE_EXERCISES = 30;
 
 function toPreferencesResponse(prefs) {
   return {
@@ -64,10 +67,73 @@ async function updatePreferences(req, res) {
   const prefs = await UserPreferences.findOneAndUpdate(
     { userId: req.user._id },
     { $set: updates },
-    { new: true, upsert: true }
+    { returnDocument: 'after', upsert: true }
   );
 
   return res.json(toPreferencesResponse(prefs));
+}
+
+function validateRoutines(routines) {
+  if (!Array.isArray(routines) || routines.length > MAX_ROUTINES) return 'routines must be a list';
+  for (const routine of routines) {
+    const name = routine && routine.name;
+    if (typeof routine?.id !== 'string' || routine.id.length === 0) return 'each routine needs an id';
+    if (typeof name !== 'string' || name.trim() === '' || name.length > MAX_ROUTINE_NAME) {
+      return 'each routine needs a name';
+    }
+    const exercises = routine.exercises;
+    if (!Array.isArray(exercises) || exercises.length === 0 || exercises.length > MAX_ROUTINE_EXERCISES) {
+      return 'each routine needs at least one exercise';
+    }
+    for (const exercise of exercises) {
+      if (!mongoose.isValidObjectId(exercise?.exerciseId) || typeof exercise.name !== 'string') {
+        return 'each exercise needs a valid exerciseId and name';
+      }
+    }
+  }
+  return null;
+}
+
+function getRoutines(req, res) {
+  return res.json({ routines: req.user.routines });
+}
+
+/** Replaces the whole list, so a phone that was offline can simply send what it has. */
+async function saveRoutines(req, res) {
+  const { routines } = req.body;
+  const invalid = validateRoutines(routines);
+  if (invalid) return res.status(400).json({ error: invalid });
+
+  req.user.routines = routines;
+  await req.user.save();
+  return res.json({ routines: req.user.routines });
+}
+
+/**
+ * Permanently removes the account and everything linked to it. Google Play requires
+ * apps that create accounts to offer this. A photo that fails to delete must not leave
+ * the account in place, so storage errors are logged and the deletion continues.
+ */
+async function deleteAccount(req, res) {
+  const userId = req.user._id;
+  const photos = await ProgressPhoto.find({ userId });
+  const blobNames = photos.map((photo) => photo.blobName);
+  if (req.user.avatarBlobName) blobNames.push(req.user.avatarBlobName);
+
+  if (blobStorage.isConfigured()) {
+    await Promise.all(
+      blobNames.map((name) => blobStorage.deleteBlob(name).catch((err) => console.error(err.message)))
+    );
+  }
+
+  await Promise.all([
+    Workout.deleteMany({ userId }),
+    UserPreferences.deleteMany({ userId }),
+    UserBadge.deleteMany({ userId }),
+    ProgressPhoto.deleteMany({ userId }),
+  ]);
+  await req.user.deleteOne();
+  return res.status(204).send();
 }
 
 /** Dashboard totals, calculated from every completed workout this user has synced. */
@@ -266,6 +332,9 @@ async function deletePhoto(req, res) {
 
 module.exports = {
   getProfile,
+  deleteAccount,
+  getRoutines,
+  saveRoutines,
   getPreferences,
   updatePreferences,
   getProgress,

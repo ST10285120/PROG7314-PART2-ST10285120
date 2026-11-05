@@ -18,6 +18,28 @@ const userSchema = new mongoose.Schema(
     avatarBlobName: { type: String, default: null },
     // FCM registration tokens, one per signed-in device.
     deviceTokens: { type: [String], default: [] },
+    // Custom routines (FR2). Embedded because they are always read and saved together.
+    routines: {
+      type: [
+        {
+          _id: false,
+          id: { type: String, required: true },
+          name: { type: String, required: true },
+          exercises: {
+            type: [
+              {
+                _id: false,
+                exerciseId: { type: String, required: true },
+                name: { type: String, required: true },
+                muscleGroup: { type: String, required: true },
+              },
+            ],
+            default: [],
+          },
+        },
+      ],
+      default: [],
+    },
   },
   { timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } }
 );

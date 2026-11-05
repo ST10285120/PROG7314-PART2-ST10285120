@@ -20,6 +20,9 @@ router.get('/exercises', listExercises);
 router.get('/badges', users.getBadgeCatalog);
 
 router.get('/users/me', users.getProfile);
+router.delete('/users/me', users.deleteAccount);
+router.get('/users/me/routines', users.getRoutines);
+router.put('/users/me/routines', users.saveRoutines);
 router.get('/users/me/preferences', users.getPreferences);
 router.put('/users/me/preferences', users.updatePreferences);
 router.get('/users/me/progress', users.getProgress);

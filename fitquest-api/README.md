@@ -97,6 +97,8 @@ an `Authorization: Bearer <JWT>` header.
 | GET | `/users/me/badges` | List badges the user has earned |
 | GET | `/workouts/suggested?recoveryHours=48` | Rules-based next-workout suggestion |
 | GET | `/users/me` | The signed-in user's profile, XP, level and streak |
+| DELETE | `/users/me` | Permanently delete the account and its data |
+| GET, PUT | `/users/me/routines` | Read or replace the user's custom routines |
 | POST | `/users/me/device-tokens` | Register a phone's FCM token |
 | POST | `/users/me/notifications/test` | Send a test push notification |
 | GET, POST | `/users/me/avatar` | Read or replace the profile picture |
