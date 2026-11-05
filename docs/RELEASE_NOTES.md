@@ -47,6 +47,16 @@ These are the features I specified during Part 1 and completed for the POE.
 - The API validates input and returns 400 or 404 instead of a server error.
 - Release builds are signed and minified, and do not log network traffic.
 
+### Refinements after code review
+
+- Unfinished workouts can be resumed from Home, and the biometric relock no longer closes a workout in progress.
+- Mistaken sets can be deleted during a workout, on the phone and on the server.
+- Units, theme and other settings now work offline and upload on reconnect.
+- Progress and Badges refresh each time they open.
+- The workout total no longer stops at 50.
+- Signing in with a second provider on the same email now explains the problem instead of failing.
+- Rest ending now gives haptic feedback, and the exercise picker can be cancelled.
+
 ### Known limitations
 
 - Exercise names come from the shared library and stay in English.
