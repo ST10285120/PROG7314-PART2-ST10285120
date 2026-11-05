@@ -1,5 +1,6 @@
 package com.fitquest.app.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fitquest.app.data.remote.dto.PreferencesDto
@@ -20,7 +21,8 @@ data class SettingsUiState(
     val signedOut: Boolean = false,
     val isUploadingAvatar: Boolean = false,
     val avatarError: Boolean = false,
-    val testNotificationResult: Int? = null
+    val testNotificationResult: Int? = null,
+    val deleteAccountError: Boolean = false
 )
 
 /** Settings, account card, profile picture and sign-out. */
@@ -106,6 +108,27 @@ class SettingsViewModel(
             authRepository.signOut()
             profileRepository.clear()
             _uiState.value = _uiState.value.copy(signedOut = true)
+            Log.i(TAG, "Signed out")
         }
+    }
+
+    /** Only clears the phone once the server confirms that the account is gone. */
+    fun deleteAccount() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(deleteAccountError = false)
+            profileRepository.deleteAccount().fold(
+                onSuccess = {
+                    workoutRepository.clearLocalData()
+                    authRepository.signOut()
+                    profileRepository.clear()
+                    _uiState.value = _uiState.value.copy(signedOut = true)
+                },
+                onFailure = { _uiState.value = _uiState.value.copy(deleteAccountError = true) }
+            )
+        }
+    }
+
+    private companion object {
+        const val TAG = "SettingsViewModel"
     }
 }

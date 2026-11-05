@@ -28,8 +28,8 @@ class AuthRepository(
     private suspend fun signIn(request: SsoRequest): AuthResult {
         return try {
             val response = api.ssoSignIn(request)
-            if (response.isSuccessful && response.body() != null) {
-                val body = response.body()!!
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
                 tokenStore.saveToken(body.token)
                 Log.i(TAG, "Signed in with ${request.provider}")
                 AuthResult.Success(body.user)

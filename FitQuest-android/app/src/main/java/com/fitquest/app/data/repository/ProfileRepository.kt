@@ -69,6 +69,20 @@ class ProfileRepository(
         Result.failure(e)
     }
 
+    /** Permanently deletes the account on the server. */
+    suspend fun deleteAccount(): Result<Unit> = try {
+        val response = api.deleteAccount()
+        if (response.isSuccessful) {
+            Log.i(TAG, "Account deleted")
+            Result.success(Unit)
+        } else {
+            Result.failure(Exception("Delete failed (HTTP ${response.code()})"))
+        }
+    } catch (e: Exception) {
+        Log.w(TAG, "Account deletion failed: ${e.message}")
+        Result.failure(e)
+    }
+
     fun clear() {
         localCache.clearUserData()
         _profile.value = null

@@ -15,6 +15,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.never
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -105,6 +106,29 @@ class SettingsViewModelTest {
         order.verify(authRepository).signOut()
         verify(profileRepository).clear()
         assertTrue(viewModel.uiState.value.signedOut)
+    }
+
+    @Test
+    fun `deleteAccount clears the phone only after the server confirms`() = runTest {
+        val viewModel = createViewModel()
+        whenever(profileRepository.deleteAccount()).thenReturn(Result.success(Unit))
+
+        viewModel.deleteAccount()
+
+        verify(workoutRepository).clearLocalData()
+        verify(profileRepository).clear()
+        assertTrue(viewModel.uiState.value.signedOut)
+    }
+
+    @Test
+    fun `a failed account deletion keeps the user signed in and shows an error`() = runTest {
+        val viewModel = createViewModel()
+        whenever(profileRepository.deleteAccount()).thenReturn(Result.failure(Exception("offline")))
+
+        viewModel.deleteAccount()
+
+        verify(authRepository, never()).signOut()
+        assertTrue(viewModel.uiState.value.deleteAccountError)
     }
 
     @Test
