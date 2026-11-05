@@ -9,6 +9,11 @@ function createApp() {
   const app = express();
   app.use(cors());
   app.use(express.json());
+  // Express 5 leaves req.body undefined when a request has no JSON body.
+  app.use((req, res, next) => {
+    if (req.body === undefined) req.body = {};
+    next();
+  });
 
   app.get('/health', (req, res) => res.json({ status: 'ok' }));
   app.use('/api', routes);

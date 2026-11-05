@@ -32,7 +32,7 @@ async function ssoSignIn(req, res) {
       profile = await verifyGitHubToken(accessToken);
     }
   } catch (err) {
-    return res.status(401).json({ error: 'SSO verification failed', detail: err.message });
+    return res.status(401).json({ error: 'SSO verification failed' });
   }
 
   let user = await User.findOne({
@@ -42,12 +42,21 @@ async function ssoSignIn(req, res) {
 
   let isNewUser = false;
   if (!user) {
-    user = await User.create({
-      username: profile.username,
-      email: profile.email,
-      ssoProvider: profile.ssoProvider,
-      ssoSubjectId: profile.ssoSubjectId,
-    });
+    try {
+      user = await User.create({
+        username: profile.username,
+        email: profile.email,
+        ssoProvider: profile.ssoProvider,
+        ssoSubjectId: profile.ssoSubjectId,
+      });
+    } catch (err) {
+      // Emails are unique, so a second provider with the same email cannot make a new
+      // account. Accounts are not merged automatically, as that could hand one over.
+      if (err.code === 11000) {
+        return res.status(409).json({ error: 'This email already uses another sign-in method' });
+      }
+      throw err;
+    }
     await UserPreferences.create({ userId: user._id });
     isNewUser = true;
   }
