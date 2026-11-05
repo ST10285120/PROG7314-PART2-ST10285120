@@ -37,18 +37,36 @@ class HomeViewModel(
         .observeRecentCompleted()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    /** A workout that was started but not finished, which Home offers to resume. */
+    val activeWorkout: StateFlow<WorkoutEntity?> = workoutRepository
+        .observeActiveWorkout()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     /** XP from finished workouts still waiting to reach the server. */
     val pendingXp: StateFlow<Int> = workoutRepository
         .observePendingXp()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    /** Stops a new suggestion replacing the current one on screen without reason. */
+    private var hasLoadedSession = false
 
     init {
         Log.d(TAG, "Created")
         refresh()
     }
 
+    /** Loads data for a new sign-in. This ViewModel outlives a sign-out. */
+    fun ensureLoaded() {
+        if (!hasLoadedSession) refresh()
+    }
+
+    fun markSessionEnded() {
+        hasLoadedSession = false
+    }
+
     /** Runs at start-up and after reconnecting. Each step copes with having no network. */
     fun refresh() {
+        hasLoadedSession = true
         loadSuggestion()
         viewModelScope.launch {
             workoutRepository.syncPendingWorkouts()

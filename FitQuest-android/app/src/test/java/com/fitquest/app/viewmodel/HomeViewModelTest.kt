@@ -19,6 +19,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -33,6 +34,7 @@ class HomeViewModelTest {
         val repo: WorkoutRepository = mock()
         whenever(repo.observeRecentCompleted()).thenReturn(recent)
         whenever(repo.observePendingXp()).thenReturn(flowOf(0))
+        whenever(repo.observeActiveWorkout()).thenReturn(flowOf(null))
         whenever(profileRepository.profile).thenReturn(MutableStateFlow(null))
         return repo
     }
@@ -96,6 +98,20 @@ class HomeViewModelTest {
         verify(repo, atLeastOnce()).syncPendingWorkouts()
         verify(repo, atLeastOnce()).restoreHistory()
         verify(profileRepository, atLeastOnce()).refresh()
+    }
+
+    @Test
+    fun `ensureLoaded does nothing until the session has ended`() = runTest {
+        val repo = mockRepository()
+        whenever(repo.getSuggestedWorkout()).thenReturn(Result.success(SuggestedWorkoutResponse("X", emptyList())))
+        val viewModel = HomeViewModel(repo, profileRepository)
+
+        viewModel.ensureLoaded()
+        verify(repo, times(1)).getSuggestedWorkout()
+
+        viewModel.markSessionEnded()
+        viewModel.ensureLoaded()
+        verify(repo, times(2)).getSuggestedWorkout()
     }
 
     @Test
