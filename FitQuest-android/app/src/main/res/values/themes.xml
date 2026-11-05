@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.FitQuest" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:statusBarColor">#111827</item>
-        <item name="android:windowBackground">#F9FAFB</item>
+    <!-- An AppCompat parent is required by AppCompatActivity, which provides the
+         in-app language switch and hosts the biometric prompt. -->
+    <style name="Theme.FitQuest" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:statusBarColor">#0B0F16</item>
+        <item name="android:windowBackground">#0B0F16</item>
     </style>
 </resources>
