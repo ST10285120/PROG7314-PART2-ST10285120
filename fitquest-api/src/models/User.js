@@ -1,3 +1,6 @@
+/**
+ * A FitQuest account. XP, level and streak are only changed by the server.
+ */
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema(
@@ -11,6 +14,10 @@ const userSchema = new mongoose.Schema(
     currentStreak: { type: Number, default: 0 },
     longestStreak: { type: Number, default: 0 },
     lastWorkoutDate: { type: Date, default: null },
+    // Blob name of the profile picture; bytes live in blob storage, not MongoDB.
+    avatarBlobName: { type: String, default: null },
+    // FCM registration tokens, one per signed-in device.
+    deviceTokens: { type: [String], default: [] },
   },
   { timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } }
 );

@@ -1,7 +1,11 @@
+/**
+ * Verifies an SSO credential, creates or matches the user, and issues a FitQuest JWT.
+ */
 const User = require('../models/User');
 const UserPreferences = require('../models/UserPreferences');
 const { verifySsoToken, exchangeGitHubCode, verifyGitHubToken } = require('../services/ssoService');
 const { issueToken } = require('../services/jwtService');
+const { toUserResponse } = require('../utils/userResponse');
 
 async function ssoSignIn(req, res) {
   const { provider, idToken, code } = req.body;
@@ -51,14 +55,7 @@ async function ssoSignIn(req, res) {
   const token = issueToken(user);
   return res.status(isNewUser ? 201 : 200).json({
     token,
-    user: {
-      id: user._id,
-      username: user.username,
-      email: user.email,
-      xpTotal: user.xpTotal,
-      level: user.level,
-      currentStreak: user.currentStreak,
-    },
+    user: toUserResponse(user),
   });
 }
 
