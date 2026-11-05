@@ -7,10 +7,21 @@ jest.mock('../src/services/ssoService', () => ({
   verifyGitHubToken: jest.fn(),
 }));
 
+jest.mock('../src/services/blobStorageService', () => ({
+  isConfigured: jest.fn(() => true),
+  newBlobName: jest.fn((folder) => `${folder}/test-blob.jpg`),
+  uploadBlob: jest.fn(),
+  downloadBlob: jest.fn(),
+  deleteBlob: jest.fn(async () => {}),
+}));
+
 const request = require('supertest');
 const createApp = require('../src/app');
 const { verifySsoToken, exchangeGitHubCode, verifyGitHubToken } = require('../src/services/ssoService');
 const Exercise = require('../src/models/Exercise');
+const Badge = require('../src/models/Badge');
+const User = require('../src/models/User');
+const blobStorage = require('../src/services/blobStorageService');
 
 const app = createApp();
 
@@ -205,6 +216,175 @@ describe('Workout logging flow (FR3, FR5)', () => {
       .send({ exerciseId: '507f1f77bcf86cd799439011', orderIndex: 0 });
 
     expect(res.status).toBe(404);
+  });
+});
+
+describe('Regression fixes from Part 2 feedback', () => {
+  async function completedWorkout(token, exerciseId, sets) {
+    const auth = (req) => req.set('Authorization', `Bearer ${token}`);
+    const created = await auth(request(app).post('/api/workouts')).send({ title: 'Day' });
+    const id = created.body.workoutId;
+    const we = await auth(request(app).post(`/api/workouts/${id}/exercises`)).send({ exerciseId, orderIndex: 0 });
+    for (const [index, weightKg] of sets.entries()) {
+      await auth(request(app).post(`/api/workouts/${id}/exercises/${we.body.workoutExerciseId}/sets`))
+        .send({ setNumber: index + 1, reps: 5, weightKg });
+    }
+    await auth(request(app).patch(`/api/workouts/${id}/complete`)).send({});
+    return id;
+  }
+
+  it('awards XP only once when the same workout is completed twice', async () => {
+    const token = await signInTestUser();
+    const exercise = await Exercise.create({ name: 'Squat', muscleGroup: 'LEGS', equipment: 'Barbell', type: 'STRENGTH' });
+    const id = await completedWorkout(token, exercise._id, [100]);
+
+    const again = await request(app)
+      .patch(`/api/workouts/${id}/complete`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({});
+    const profile = await request(app).get('/api/users/me').set('Authorization', `Bearer ${token}`);
+
+    expect(again.status).toBe(200);
+    expect(again.body.xpEarned).toBe(25);
+    expect(profile.body.xpTotal).toBe(25);
+  });
+
+  it('returns a populated muscle group split and PRs by exercise name', async () => {
+    const token = await signInTestUser();
+    const exercise = await Exercise.create({ name: 'Squat', muscleGroup: 'LEGS', equipment: 'Barbell', type: 'STRENGTH' });
+    await completedWorkout(token, exercise._id, [100]);
+
+    const res = await request(app).get('/api/users/me/progress').set('Authorization', `Bearer ${token}`);
+
+    expect(res.body.muscleGroupSplit.LEGS).toBe(500);
+    expect(res.body.prsByExercise.Squat).toBe(100);
+  });
+});
+
+describe('POST /api/workouts/sync (offline replay)', () => {
+  const body = (exerciseId, completedAt) => ({
+    clientId: 'workout-uuid-1',
+    title: 'Offline Day',
+    startedAt: '2026-03-01T08:00:00.000Z',
+    completedAt,
+    exercises: [
+      {
+        clientId: 'we-uuid-1',
+        exerciseId,
+        orderIndex: 0,
+        sets: [
+          { clientId: 'set-uuid-1', setNumber: 1, reps: 5, weightKg: 100 },
+          { clientId: 'set-uuid-2', setNumber: 2, reps: 5, weightKg: 100 },
+        ],
+      },
+    ],
+  });
+
+  it('stores a full workout and returns the authoritative result', async () => {
+    const token = await signInTestUser();
+    const exercise = await Exercise.create({ name: 'Row', muscleGroup: 'BACK', equipment: 'Barbell', type: 'STRENGTH' });
+
+    const res = await request(app)
+      .post('/api/workouts/sync')
+      .set('Authorization', `Bearer ${token}`)
+      .send(body(exercise._id, '2026-03-01T09:00:00.000Z'));
+
+    expect(res.status).toBe(200);
+    expect(res.body.completion.xpEarned).toBe(30);
+    expect(res.body.sets).toHaveLength(2);
+  });
+
+  it('does not duplicate data or XP when the same sync is replayed', async () => {
+    const token = await signInTestUser();
+    const exercise = await Exercise.create({ name: 'Row', muscleGroup: 'BACK', equipment: 'Barbell', type: 'STRENGTH' });
+    const payload = body(exercise._id, '2026-03-01T09:00:00.000Z');
+    const send = () => request(app).post('/api/workouts/sync').set('Authorization', `Bearer ${token}`).send(payload);
+
+    await send();
+    const replay = await send();
+    const history = await request(app).get('/api/workouts/history').set('Authorization', `Bearer ${token}`);
+    const profile = await request(app).get('/api/users/me').set('Authorization', `Bearer ${token}`);
+
+    expect(replay.status).toBe(200);
+    expect(history.body).toHaveLength(1);
+    expect(history.body[0].exercises[0].sets).toHaveLength(2);
+    expect(history.body[0].exercises[0].name).toBe('Row');
+    expect(profile.body.xpTotal).toBe(30);
+  });
+
+  it('adds new sets when an unfinished workout is synced again', async () => {
+    const token = await signInTestUser();
+    const exercise = await Exercise.create({ name: 'Row', muscleGroup: 'BACK', equipment: 'Barbell', type: 'STRENGTH' });
+    const payload = body(exercise._id);
+    const send = (data) => request(app).post('/api/workouts/sync').set('Authorization', `Bearer ${token}`).send(data);
+
+    await send(payload);
+    payload.exercises[0].sets.push({ clientId: 'set-uuid-3', setNumber: 3, reps: 5, weightKg: 110 });
+    const res = await send(payload);
+
+    expect(res.body.sets).toHaveLength(3);
+    expect(res.body.completion).toBeNull();
+  });
+
+  it('rejects invalid input with 400', async () => {
+    const token = await signInTestUser();
+    const res = await request(app)
+      .post('/api/workouts/sync')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ clientId: 'x', title: '', exercises: 'nope' });
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('Badges, notifications and photos', () => {
+  it('lists locked badges with progress', async () => {
+    const token = await signInTestUser();
+    await Badge.create({ name: '10 Workouts', description: 'd', criteriaType: 'WORKOUT_COUNT', criteriaValue: 10 });
+
+    const res = await request(app).get('/api/badges').set('Authorization', `Bearer ${token}`);
+
+    expect(res.body[0]).toMatchObject({ name: '10 Workouts', target: 10, progress: 0, earnedAt: null });
+  });
+
+  it('stores a device token only once', async () => {
+    const token = await signInTestUser();
+    const send = () => request(app)
+      .post('/api/users/me/device-tokens')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ token: 'fcm-token' });
+
+    await send();
+    const res = await send();
+    const user = await User.findOne({ email: 'test@example.com' });
+
+    expect(res.status).toBe(204);
+    expect(user.deviceTokens).toEqual(['fcm-token']);
+  });
+
+  it('uploads a JPEG progress photo and lists it', async () => {
+    const token = await signInTestUser();
+    const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
+
+    const upload = await request(app)
+      .post('/api/users/me/photos')
+      .set('Authorization', `Bearer ${token}`)
+      .set('Content-Type', 'image/jpeg')
+      .send(jpeg);
+    const list = await request(app).get('/api/users/me/photos').set('Authorization', `Bearer ${token}`);
+
+    expect(upload.status).toBe(201);
+    expect(list.body).toHaveLength(1);
+    expect(blobStorage.uploadBlob).toHaveBeenCalled();
+  });
+
+  it('rejects a file that only claims to be a JPEG', async () => {
+    const token = await signInTestUser();
+    const res = await request(app)
+      .post('/api/users/me/avatar')
+      .set('Authorization', `Bearer ${token}`)
+      .set('Content-Type', 'image/jpeg')
+      .send(Buffer.from('not an image'));
+    expect(res.status).toBe(400);
   });
 });
 
