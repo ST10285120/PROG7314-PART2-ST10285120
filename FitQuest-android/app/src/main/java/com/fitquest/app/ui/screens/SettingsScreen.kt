@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -26,6 +27,7 @@ import coil.compose.AsyncImage
 import com.fitquest.app.BuildConfig
 import com.fitquest.app.R
 import com.fitquest.app.data.remote.dto.UserDto
+import com.fitquest.app.ui.components.ConfirmDialog
 import com.fitquest.app.ui.components.ErrorBanner
 import com.fitquest.app.ui.components.FitQuestCard
 import com.fitquest.app.ui.components.SectionHeader
@@ -50,8 +52,38 @@ fun SettingsScreen(
     onSave: (reminderTime: String, restTimerDefaultSec: Int) -> Unit,
     onChangeAvatar: () -> Unit,
     onTestNotification: () -> Unit,
-    onLogOut: () -> Unit
+    onLogOut: () -> Unit,
+    onDeleteAccount: () -> Unit
 ) {
+    val uriHandler = LocalUriHandler.current
+    var confirmLogOut by remember { mutableStateOf(false) }
+    var confirmDeleteAccount by remember { mutableStateOf(false) }
+
+    if (confirmLogOut) {
+        ConfirmDialog(
+            title = stringResource(R.string.log_out),
+            message = stringResource(R.string.log_out_message),
+            confirmLabel = stringResource(R.string.log_out),
+            onConfirm = {
+                confirmLogOut = false
+                onLogOut()
+            },
+            onDismiss = { confirmLogOut = false }
+        )
+    }
+    if (confirmDeleteAccount) {
+        ConfirmDialog(
+            title = stringResource(R.string.delete_account),
+            message = stringResource(R.string.delete_account_message),
+            confirmLabel = stringResource(R.string.delete),
+            onConfirm = {
+                confirmDeleteAccount = false
+                onDeleteAccount()
+            },
+            onDismiss = { confirmDeleteAccount = false }
+        )
+    }
+
     var reminderTimeDraft by remember(uiState.preferences.reminderTime) {
         mutableStateOf(uiState.preferences.reminderTime)
     }
@@ -223,8 +255,19 @@ fun SettingsScreen(
             )
         }
 
+        SectionHeader(stringResource(R.string.section_about))
+        FitQuestCard {
+            Text(
+                stringResource(R.string.app_version, BuildConfig.VERSION_NAME),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            TextButton(onClick = { uriHandler.openUri(PRIVACY_POLICY_URL) }) {
+                Text(stringResource(R.string.privacy_policy))
+            }
+        }
+
         OutlinedButton(
-            onClick = onLogOut,
+            onClick = { confirmLogOut = true },
             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
             modifier = Modifier.fillMaxWidth().height(52.dp),
@@ -234,6 +277,13 @@ fun SettingsScreen(
             Spacer(Modifier.width(Spacing.sm))
             Text(stringResource(R.string.log_out))
         }
+
+        TextButton(
+            onClick = { confirmDeleteAccount = true },
+            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            modifier = Modifier.fillMaxWidth()
+        ) { Text(stringResource(R.string.delete_account)) }
+        if (uiState.deleteAccountError) ErrorBanner(stringResource(R.string.delete_account_error))
 
         Spacer(Modifier.height(Spacing.lg))
     }

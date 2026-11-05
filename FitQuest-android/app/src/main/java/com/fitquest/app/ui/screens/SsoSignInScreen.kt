@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -18,6 +19,9 @@ import com.fitquest.app.ui.components.PrimaryButton
 import com.fitquest.app.ui.components.Spacing
 import com.fitquest.app.viewmodel.AuthUiState
 
+const val PRIVACY_POLICY_URL =
+    "https://github.com/ST10285120/PROG7314-PART2-ST10285120/blob/main/docs/PRIVACY_POLICY.md"
+
 /** The entry screen. Accounts are created by signing in with Google or GitHub. */
 @Composable
 fun SsoSignInScreen(
@@ -25,6 +29,7 @@ fun SsoSignInScreen(
     onSignInWithGoogle: () -> Unit,
     onSignInWithGitHub: () -> Unit
 ) {
+    val uriHandler = LocalUriHandler.current
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             modifier = Modifier.fillMaxSize().systemBarsPadding().padding(Spacing.lg),
@@ -89,13 +94,15 @@ fun SsoSignInScreen(
             }
 
             Spacer(Modifier.height(Spacing.xl))
-            Text(
-                stringResource(R.string.terms_notice),
-                style = MaterialTheme.typography.bodySmall,
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
+            TextButton(onClick = { uriHandler.openUri(PRIVACY_POLICY_URL) }) {
+                Text(
+                    stringResource(R.string.terms_notice),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
