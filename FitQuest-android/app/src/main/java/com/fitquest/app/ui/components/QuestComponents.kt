@@ -1,5 +1,8 @@
 package com.fitquest.app.ui.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -10,17 +13,19 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -35,11 +40,13 @@ import com.fitquest.app.ui.theme.FitQuestNavy
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.random.Random
 
 /** XP per level. Must match XP_PER_LEVEL in the API's gamification service. */
 const val XP_PER_LEVEL = 200
 
-private val HeroGradient = Brush.linearGradient(listOf(FitQuestNavy, Color(0xFF0F3D2E), FitQuestGreen))
+/** The signature gradient, used for every hero surface in the app. */
+val QuestGradient = Brush.linearGradient(listOf(FitQuestNavy, Color(0xFF0F3D2E), FitQuestGreen))
 
 /** Points of a flat-sided hexagon, the shape used for level and badge medals. */
 private fun hexagonPath(center: Offset, radius: Float): Path = Path().apply {
@@ -130,7 +137,7 @@ fun QuestHeroCard(
     onClick: () -> Unit
 ) {
     Card(onClick = onClick, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.background(HeroGradient).padding(Spacing.md)) {
+        Column(modifier = Modifier.background(QuestGradient).padding(Spacing.md)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 LevelHexagon(level = level, size = 64.dp)
                 Spacer(Modifier.width(Spacing.md))
@@ -151,8 +158,12 @@ fun QuestHeroCard(
 
             Spacer(Modifier.height(Spacing.md))
             val xpIntoLevel = xpTotal % XP_PER_LEVEL
+            val xpBar = remember { Animatable(0f) }
+            LaunchedEffect(xpIntoLevel) {
+                xpBar.animateTo(xpIntoLevel / XP_PER_LEVEL.toFloat(), tween(800))
+            }
             LinearProgressIndicator(
-                progress = { xpIntoLevel / XP_PER_LEVEL.toFloat() },
+                progress = { xpBar.value },
                 color = FitQuestGold,
                 trackColor = Color.White.copy(alpha = 0.2f),
                 modifier = Modifier.fillMaxWidth().height(10.dp).clip(MaterialTheme.shapes.extraSmall)
@@ -237,6 +248,8 @@ fun muscleGroupName(group: String): String = when (group) {
 fun VolumeLineChart(values: List<Double>, modifier: Modifier = Modifier) {
     val lineColor = MaterialTheme.colorScheme.primary
     val gridColor = MaterialTheme.colorScheme.outlineVariant
+    val reveal = remember { Animatable(0f) }
+    LaunchedEffect(values) { reveal.animateTo(1f, tween(700)) }
     Canvas(modifier = modifier.fillMaxWidth().height(140.dp)) {
         val top = 8.dp.toPx()
         val chartHeight = size.height - top * 2
@@ -250,11 +263,20 @@ fun VolumeLineChart(values: List<Double>, modifier: Modifier = Modifier) {
         val stepX = if (values.size > 1) size.width / (values.size - 1) else 0f
         val points = values.mapIndexed { index, value ->
             val x = if (values.size > 1) stepX * index else size.width / 2
-            Offset(x, top + chartHeight * (1 - (value / maxValue).toFloat()))
+            Offset(x, top + chartHeight * (1 - (value / maxValue).toFloat() * reveal.value))
         }
         val path = Path()
         points.forEachIndexed { index, point ->
             if (index == 0) path.moveTo(point.x, point.y) else path.lineTo(point.x, point.y)
+        }
+        if (points.size > 1) {
+            val area = Path().apply {
+                addPath(path)
+                lineTo(points.last().x, top + chartHeight)
+                lineTo(points.first().x, top + chartHeight)
+                close()
+            }
+            drawPath(area, Brush.verticalGradient(listOf(lineColor.copy(alpha = 0.3f), Color.Transparent)))
         }
         drawPath(path, lineColor, style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round))
         points.forEach { drawCircle(lineColor, radius = 4.dp.toPx(), center = it) }
@@ -264,10 +286,12 @@ fun VolumeLineChart(values: List<Double>, modifier: Modifier = Modifier) {
 /** One row of the muscle group breakdown. */
 @Composable
 fun SplitBar(label: String, fraction: Float) {
+    val animated = remember { Animatable(0f) }
+    LaunchedEffect(fraction) { animated.animateTo(fraction, tween(700)) }
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 3.dp)) {
         Text(label, style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(88.dp))
         LinearProgressIndicator(
-            progress = { fraction },
+            progress = { animated.value },
             modifier = Modifier.weight(1f).height(10.dp).clip(MaterialTheme.shapes.extraSmall)
         )
         Text(
@@ -293,3 +317,180 @@ fun OfflineBanner() {
         }
     }
 }
+
+/** A friendly placeholder, so a new account never looks broken or unfinished. */
+@Composable
+fun EmptyState(icon: ImageVector, message: String, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxWidth().padding(vertical = Spacing.lg, horizontal = Spacing.md),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(modifier = Modifier.size(72.dp), contentAlignment = Alignment.Center) {
+            val tint = MaterialTheme.colorScheme.primaryContainer
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val center = Offset(size.width / 2, size.height / 2)
+                drawPath(hexagonPath(center, size.minDimension / 2), tint, style = Fill)
+            }
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(32.dp)
+            )
+        }
+        Spacer(Modifier.height(Spacing.sm))
+        Text(
+            message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+/** The live workout header: what you are doing, how far along you are, and for how long. */
+@Composable
+fun WorkoutHero(
+    exerciseName: String,
+    position: Int,
+    total: Int,
+    setsLogged: Int,
+    elapsed: String
+) {
+    Card(shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.background(QuestGradient).padding(Spacing.md)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.exercise_position, position, total),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = FitQuestGold,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(elapsed, style = MaterialTheme.typography.titleMedium, color = Color.White)
+            }
+            Spacer(Modifier.height(Spacing.xs))
+            Text(exerciseName, style = MaterialTheme.typography.headlineSmall, color = Color.White)
+            Spacer(Modifier.height(Spacing.sm))
+            LinearProgressIndicator(
+                progress = { position / total.coerceAtLeast(1).toFloat() },
+                color = FitQuestGold,
+                trackColor = Color.White.copy(alpha = 0.2f),
+                modifier = Modifier.fillMaxWidth().height(6.dp).clip(MaterialTheme.shapes.extraSmall)
+            )
+            Spacer(Modifier.height(Spacing.xs))
+            Text(
+                stringResource(R.string.sets_logged_count, setsLogged),
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.85f)
+            )
+        }
+    }
+}
+
+/** The rest countdown as a shrinking ring, readable at a glance from across a bench. */
+@Composable
+fun RestTimerRing(seconds: Int, totalSeconds: Int, onSkip: () -> Unit) {
+    val ringColor = MaterialTheme.colorScheme.primary
+    val trackColor = MaterialTheme.colorScheme.outlineVariant
+    val sweep = remember { Animatable(1f) }
+    LaunchedEffect(seconds) {
+        sweep.animateTo(seconds / totalSeconds.coerceAtLeast(1).toFloat(), tween(300))
+    }
+
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(modifier = Modifier.padding(Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.size(64.dp), contentAlignment = Alignment.Center) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val stroke = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round)
+                    drawArc(trackColor, 0f, 360f, useCenter = false, style = stroke)
+                    drawArc(ringColor, -90f, 360f * sweep.value, useCenter = false, style = stroke)
+                }
+                Text("$seconds", style = MaterialTheme.typography.titleLarge)
+            }
+            Spacer(Modifier.width(Spacing.md))
+            Text(
+                stringResource(R.string.rest_timer, seconds / 60, seconds % 60),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f)
+            )
+            TextButton(onClick = onSkip) { Text(stringResource(R.string.skip_rest)) }
+        }
+    }
+}
+
+/** The Progress dashboard header, with the three numbers users care about most. */
+@Composable
+fun StatsHero(workouts: Int, volume: String, records: Int) {
+    Card(shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.background(QuestGradient).padding(Spacing.md).fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            HeroStat(value = "$workouts", label = stringResource(R.string.stat_workouts))
+            HeroStat(value = volume, label = stringResource(R.string.stat_volume))
+            HeroStat(value = "$records", label = stringResource(R.string.personal_records))
+        }
+    }
+}
+
+@Composable
+private fun RowScope.HeroStat(value: String, label: String) {
+    Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, style = MaterialTheme.typography.headlineSmall, color = FitQuestGold, maxLines = 1)
+        Text(
+            label,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.White.copy(alpha = 0.85f),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+private data class ConfettiPiece(
+    val x: Float,
+    val start: Float,
+    val size: Float,
+    val drift: Float,
+    val color: Color
+)
+
+/** A short burst of brand-coloured confetti for finishing a workout. */
+@Composable
+fun ConfettiOverlay(modifier: Modifier = Modifier) {
+    val pieces = remember {
+        val colors = listOf(FitQuestGold, FitQuestGreen, Color.White)
+        List(CONFETTI_PIECES) {
+            ConfettiPiece(
+                x = Random.nextFloat(),
+                start = Random.nextFloat() * 0.5f,
+                size = 6f + Random.nextFloat() * 8f,
+                drift = 10f + Random.nextFloat() * 30f,
+                color = colors.random()
+            )
+        }
+    }
+    val progress = remember { Animatable(0f) }
+    LaunchedEffect(Unit) { progress.animateTo(1f, tween(CONFETTI_MS, easing = LinearEasing)) }
+
+    Canvas(modifier = modifier.fillMaxSize()) {
+        pieces.forEach { piece ->
+            val t = (progress.value - piece.start) / (1f - piece.start)
+            if (t in 0f..1f) {
+                val sway = sin(t * 2f * PI.toFloat() * 2f) * piece.drift
+                drawRect(
+                    color = piece.color,
+                    topLeft = Offset(piece.x * size.width + sway, t * size.height),
+                    size = Size(piece.size, piece.size * 1.6f),
+                    alpha = 1f - t
+                )
+            }
+        }
+    }
+}
+
+private const val CONFETTI_PIECES = 60
+private const val CONFETTI_MS = 2600

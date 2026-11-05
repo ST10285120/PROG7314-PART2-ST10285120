@@ -47,7 +47,6 @@
     <string name="muscle_shoulders">Shoulders</string>
     <string name="muscle_arms">Arms</string>
     <string name="muscle_core">Core</string>
-    <string name="current_exercise">CURRENT EXERCISE</string>
     <string name="reps">Reps</string>
     <string name="weight_label">Weight (%1$s)</string>
     <string name="decrease">Decrease</string>
@@ -205,4 +204,6 @@
     <string name="badge_desc_workouts_50">Complete 50 workouts</string>
     <string name="badge_desc_first_pr">Set your first personal record</string>
     <string name="badge_desc_prs_10">Set 10 personal records</string>
+    <string name="exercise_position">EXERCISE %1$d OF %2$d</string>
+    <string name="sets_logged_count">Sets logged: %1$d</string>
 </resources>

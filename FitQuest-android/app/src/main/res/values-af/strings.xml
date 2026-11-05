@@ -46,7 +46,6 @@
     <string name="muscle_shoulders">Skouers</string>
     <string name="muscle_arms">Arms</string>
     <string name="muscle_core">Kernspiere</string>
-    <string name="current_exercise">HUIDIGE OEFENING</string>
     <string name="reps">Herhalings</string>
     <string name="weight_label">Gewig (%1$s)</string>
     <string name="decrease">Verminder</string>
@@ -204,4 +203,6 @@
     <string name="badge_desc_workouts_50">Voltooi 50 oefensessies</string>
     <string name="badge_desc_first_pr">Stel jou eerste persoonlike rekord op</string>
     <string name="badge_desc_prs_10">Stel 10 persoonlike rekords op</string>
+    <string name="exercise_position">OEFENING %1$d VAN %2$d</string>
+    <string name="sets_logged_count">Stelle aangeteken: %1$d</string>
 </resources>

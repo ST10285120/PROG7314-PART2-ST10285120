@@ -46,7 +46,6 @@
     <string name="muscle_shoulders">Amahlombe</string>
     <string name="muscle_arms">Izingalo</string>
     <string name="muscle_core">Umsisi womzimba</string>
-    <string name="current_exercise">ISIVIVINYO SAMANJE</string>
     <string name="reps">Ukuphinda</string>
     <string name="weight_label">Isisindo (%1$s)</string>
     <string name="decrease">Nciphisa</string>
@@ -204,4 +203,6 @@
     <string name="badge_desc_workouts_50">Qeda ukuzivocavoca okungu-50</string>
     <string name="badge_desc_first_pr">Setha irekhodi lakho lokuqala</string>
     <string name="badge_desc_prs_10">Setha amarekhodi ayi-10</string>
+    <string name="exercise_position">ISIVIVINYO %1$d KWEZINGU-%2$d</string>
+    <string name="sets_logged_count">Amasethi afakiwe: %1$d</string>
 </resources>
