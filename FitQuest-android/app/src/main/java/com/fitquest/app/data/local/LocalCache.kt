@@ -2,6 +2,7 @@ package com.fitquest.app.data.local
 
 import android.content.Context
 import com.fitquest.app.data.remote.dto.ExerciseDto
+import com.fitquest.app.data.remote.dto.PreferencesDto
 import com.fitquest.app.data.remote.dto.SuggestedWorkoutResponse
 import com.fitquest.app.data.remote.dto.UserDto
 import com.google.gson.Gson
@@ -21,6 +22,16 @@ class LocalCache(context: Context) {
         get() = prefs.getBoolean(KEY_BIOMETRIC, true)
         set(value) = prefs.edit().putBoolean(KEY_BIOMETRIC, value).apply()
 
+    /** True when settings changed offline and the server has not received them yet. */
+    var hasPendingPreferences: Boolean
+        get() = prefs.getBoolean(KEY_PREFERENCES_PENDING, false)
+        set(value) = prefs.edit().putBoolean(KEY_PREFERENCES_PENDING, value).apply()
+
+    fun savePreferences(preferences: PreferencesDto) = putJson(KEY_PREFERENCES, preferences)
+
+    fun getPreferences(): PreferencesDto? =
+        readJson(KEY_PREFERENCES) { gson.fromJson(it, PreferencesDto::class.java) }
+
     fun saveExercises(exercises: List<ExerciseDto>) = putJson(KEY_EXERCISES, exercises)
 
     fun getExercises(): List<ExerciseDto>? {
@@ -39,7 +50,13 @@ class LocalCache(context: Context) {
 
     /** Removes user data on sign-out. Device settings stay. */
     fun clearUserData() {
-        prefs.edit().remove(KEY_EXERCISES).remove(KEY_SUGGESTION).remove(KEY_PROFILE).apply()
+        prefs.edit()
+            .remove(KEY_EXERCISES)
+            .remove(KEY_SUGGESTION)
+            .remove(KEY_PROFILE)
+            .remove(KEY_PREFERENCES)
+            .remove(KEY_PREFERENCES_PENDING)
+            .apply()
     }
 
     private fun putJson(key: String, value: Any) {
@@ -58,5 +75,7 @@ class LocalCache(context: Context) {
         const val KEY_EXERCISES = "exercises"
         const val KEY_SUGGESTION = "suggestion"
         const val KEY_PROFILE = "profile"
+        const val KEY_PREFERENCES = "preferences"
+        const val KEY_PREFERENCES_PENDING = "preferences_pending"
     }
 }

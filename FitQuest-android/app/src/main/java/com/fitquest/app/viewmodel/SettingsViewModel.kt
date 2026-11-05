@@ -44,7 +44,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             preferencesRepository.getPreferences().fold(
-                onSuccess = { prefs -> _uiState.value = _uiState.value.copy(preferences = prefs, isLoading = false) },
+                onSuccess = { prefs -> _uiState.value = _uiState.value.copy(preferences = prefs, isLoading = false, errorMessage = null) },
                 onFailure = { err ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,

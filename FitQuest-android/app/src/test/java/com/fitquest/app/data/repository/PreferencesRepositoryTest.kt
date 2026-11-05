@@ -1,5 +1,6 @@
 package com.fitquest.app.data.repository
 
+import com.fitquest.app.data.local.LocalCache
 import com.fitquest.app.data.remote.FitQuestApi
 import com.fitquest.app.data.remote.dto.PreferencesDto
 import kotlinx.coroutines.test.runTest
@@ -11,12 +12,14 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import retrofit2.Response
 
 class PreferencesRepositoryTest {
 
     private lateinit var api: FitQuestApi
+    private lateinit var localCache: LocalCache
     private lateinit var repository: PreferencesRepository
 
     private val defaultPrefs = PreferencesDto(units = "KG", theme = "SYSTEM", reminderTime = "18:00", restTimerDefaultSec = 90)
@@ -24,7 +27,8 @@ class PreferencesRepositoryTest {
     @Before
     fun setUp() {
         api = mock()
-        repository = PreferencesRepository(api)
+        localCache = mock()
+        repository = PreferencesRepository(api, localCache)
     }
 
     @Test
@@ -77,5 +81,24 @@ class PreferencesRepositoryTest {
         val result = repository.updatePreferences(defaultPrefs)
 
         assertTrue(result.isFailure)
+    }
+
+    @Test
+    fun `getPreferences uses the local copy when offline`() = runTest {
+        whenever(api.getPreferences()).thenThrow(RuntimeException("offline"))
+        whenever(localCache.getPreferences()).thenReturn(defaultPrefs.copy(units = "LB"))
+
+        assertEquals("LB", repository.getPreferences().getOrNull()?.units)
+    }
+
+    @Test
+    fun `an offline change is kept and marked as pending`() = runTest {
+        whenever(api.updatePreferences(any())).thenThrow(RuntimeException("offline"))
+
+        val result = repository.updatePreferences(defaultPrefs)
+
+        assertTrue(result.isSuccess)
+        verify(localCache).savePreferences(defaultPrefs)
+        verify(localCache).hasPendingPreferences = true
     }
 }

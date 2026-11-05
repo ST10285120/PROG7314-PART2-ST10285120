@@ -36,7 +36,7 @@ class AppContainer(context: Context) {
     val connectivityObserver: ConnectivityObserver by lazy { ConnectivityObserver(appContext) }
 
     val authRepository: AuthRepository by lazy { AuthRepository(api, tokenStore) }
-    val preferencesRepository: PreferencesRepository by lazy { PreferencesRepository(api) }
+    val preferencesRepository: PreferencesRepository by lazy { PreferencesRepository(api, localCache) }
     val profileRepository: ProfileRepository by lazy { ProfileRepository(api, localCache) }
     val photoRepository: PhotoRepository by lazy { PhotoRepository(api) }
     val workoutRepository: WorkoutRepository by lazy {
