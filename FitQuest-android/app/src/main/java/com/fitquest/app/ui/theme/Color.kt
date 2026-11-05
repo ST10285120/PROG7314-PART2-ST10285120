@@ -1,5 +1,7 @@
 package com.fitquest.app.ui.theme
 
+// FitQuest brand palette: navy, green and gold, with neutral greys.
+
 import androidx.compose.ui.graphics.Color
 
 val FitQuestGreen = Color(0xFF16A34A)
@@ -18,6 +20,7 @@ val FitQuestSurfaceTint = Color(0xFFFFFFFF)
 val FitQuestCardBorder = Color(0xFFE5E7EB)
 val FitQuestDivider = Color(0xFFEEF0F3)
 
+val FitQuestGold = Color(0xFFFBBF24)
 val FitQuestAmber = Color(0xFFF59E0B)
 val FitQuestAmberContainer = Color(0xFFFEF3C7)
 val FitQuestRed = Color(0xFFDC2626)

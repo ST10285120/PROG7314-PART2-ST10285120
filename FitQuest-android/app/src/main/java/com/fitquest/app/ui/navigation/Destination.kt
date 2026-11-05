@@ -1,15 +1,12 @@
 package com.fitquest.app.ui.navigation
 
+/** Routes of the signed-in navigation graph. */
 sealed class Destination(val route: String) {
-    data object Splash : Destination("splash")
-    data object SsoSignIn : Destination("sso_sign_in")
     data object Home : Destination("home")
-    data object ExercisePicker : Destination("exercise_picker")
     data object ActiveWorkout : Destination("active_workout")
     data object WorkoutSummary : Destination("workout_summary")
     data object Progress : Destination("progress")
     data object Badges : Destination("badges")
-    data object Profile : Destination("profile")
     data object Settings : Destination("settings")
 
     data object WorkoutDetail : Destination("workout_detail/{workoutLocalId}") {

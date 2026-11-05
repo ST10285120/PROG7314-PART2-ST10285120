@@ -59,6 +59,7 @@ private val DarkColors = darkColorScheme(
     onErrorContainer = Color(0xFFF87171),
 )
 
+/** FitQuest's navy, green and gold brand colours in light and dark. */
 @Composable
 fun FitQuestTheme(
     useDarkTheme: Boolean = isSystemInDarkTheme(),

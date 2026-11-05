@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
+/** Shared spacing scale. */
 object Spacing {
     val xs = 4.dp
     val sm = 8.dp
@@ -17,6 +18,7 @@ object Spacing {
     val xl = 32.dp
 }
 
+/** The standard card. Passing onClick makes the whole card a tap target. */
 @Composable
 fun FitQuestCard(
     modifier: Modifier = Modifier,
@@ -47,6 +49,7 @@ fun FitQuestCard(
     }
 }
 
+/** The main action on a screen. */
 @Composable
 fun PrimaryButton(
     text: String,
@@ -70,6 +73,7 @@ fun PrimaryButton(
     }
 }
 
+/** A small heading above a group of cards. */
 @Composable
 fun SectionHeader(text: String, modifier: Modifier = Modifier) {
     Text(
@@ -80,6 +84,7 @@ fun SectionHeader(text: String, modifier: Modifier = Modifier) {
     )
 }
 
+/** A centred spinner for content that is loading. */
 @Composable
 fun LoadingBlock(modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxWidth().padding(Spacing.lg), contentAlignment = Alignment.Center) {
@@ -87,6 +92,7 @@ fun LoadingBlock(modifier: Modifier = Modifier) {
     }
 }
 
+/** A small status label, such as PR or Pending sync. */
 @Composable
 fun StatusChip(
     text: String,
@@ -109,6 +115,7 @@ fun StatusChip(
     }
 }
 
+/** Shows a problem to the user without interrupting the screen. */
 @Composable
 fun ErrorBanner(message: String, modifier: Modifier = Modifier) {
     Surface(
