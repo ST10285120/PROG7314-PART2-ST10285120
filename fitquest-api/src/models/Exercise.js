@@ -1,3 +1,6 @@
+/**
+ * An entry in the shared exercise library.
+ */
 const mongoose = require('mongoose');
 
 const exerciseSchema = new mongoose.Schema({

@@ -1,3 +1,6 @@
+/**
+ * Entry point: connects to MongoDB, then starts the HTTP server.
+ */
 require('dotenv').config();
 const createApp = require('./src/app');
 const { connectDb } = require('./src/config/db');

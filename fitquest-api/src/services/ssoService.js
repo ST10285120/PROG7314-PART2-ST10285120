@@ -1,3 +1,6 @@
+/**
+ * Verifies Google ID tokens and exchanges GitHub authorization codes.
+ */
 const { OAuth2Client } = require('google-auth-library');
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);

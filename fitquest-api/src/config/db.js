@@ -1,3 +1,6 @@
+/**
+ * Mongoose connection helpers.
+ */
 const mongoose = require('mongoose');
 
 async function connectDb(uri) {

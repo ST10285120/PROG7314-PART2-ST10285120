@@ -1,3 +1,6 @@
+/**
+ * Records that a user earned a badge. The unique index stops duplicates.
+ */
 const mongoose = require('mongoose');
 
 const userBadgeSchema = new mongoose.Schema({

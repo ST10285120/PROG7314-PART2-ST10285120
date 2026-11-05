@@ -1,3 +1,6 @@
+/**
+ * Settings that follow the user between devices.
+ */
 const mongoose = require('mongoose');
 
 const userPreferencesSchema = new mongoose.Schema(

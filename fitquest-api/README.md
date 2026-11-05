@@ -44,7 +44,6 @@ src/
   utils/seed.js           Seeds the exercise library and badge definitions
 server.js                 Entry point: connects to MongoDB, then starts listening
 tests/                    Jest + Supertest test suite
-.github/workflows/        CI (test) and CD (deploy) workflows
 ```
 
 ## Running locally
@@ -81,7 +80,7 @@ The suite has two layers:
   service needed — SSO provider calls are mocked so tests never hit Google or GitHub).
 
 GitHub Actions runs the full suite automatically on every push and pull request via
-`.github/workflows/test.yml`.
+`.github/workflows/api.yml` at the repository root.
 
 ## API reference
 
@@ -94,9 +93,19 @@ an `Authorization: Bearer <JWT>` header.
 | GET | `/exercises?muscleGroup=&equipment=` | List/filter the shared exercise library |
 | GET | `/users/me/preferences` | Read the signed-in user's settings |
 | PUT | `/users/me/preferences` | Update units, theme, reminder time, rest-timer default |
-| GET | `/users/me/progress` | Volume-by-week and personal-record data for the dashboard |
+| GET | `/users/me/progress` | Weekly volume, best lift per exercise and muscle group split |
 | GET | `/users/me/badges` | List badges the user has earned |
 | GET | `/workouts/suggested?recoveryHours=48` | Rules-based next-workout suggestion |
+| GET | `/users/me` | The signed-in user's profile, XP, level and streak |
+| POST | `/users/me/device-tokens` | Register a phone's FCM token |
+| POST | `/users/me/notifications/test` | Send a test push notification |
+| GET, POST | `/users/me/avatar` | Read or replace the profile picture |
+| GET, POST | `/users/me/photos` | List or upload progress photos |
+| GET | `/users/me/photos/:id/content` | Download one of the user's photos |
+| DELETE | `/users/me/photos/:id` | Delete a progress photo |
+| GET | `/badges` | Every badge with the user's progress |
+| POST | `/workouts/sync` | Idempotently upsert a whole workout from the phone |
+| GET | `/workouts/history?limit=100` | Completed workouts, used to restore a new phone |
 | POST | `/workouts` | Start a workout |
 | POST | `/workouts/:id/exercises` | Add an exercise to a workout |
 | POST | `/workouts/:id/exercises/:weId/sets` | Log a set (server determines if it's a PR) |
@@ -104,9 +113,9 @@ an `Authorization: Bearer <JWT>` header.
 
 ## Deployment
 
-`.github/workflows/deploy.yml` triggers a deploy on Render via a deploy hook whenever
+`.github/workflows/deploy.yml` at the repository root triggers a deploy on Render via a deploy hook whenever
 `main` passes CI. Add the Render deploy hook URL as a repository secret named
 `RENDER_DEPLOY_HOOK_URL` (Render dashboard > your service > Settings > Deploy Hook).
-Render itself is configured to run `npm install` then `npm start`, with `MONGO_URI`,
-`JWT_SECRET`, and `GOOGLE_CLIENT_ID` set as environment variables in the Render
-dashboard (never committed to the repository).
+Render runs `npm install` then `npm start` from the `fitquest-api` folder. Environment
+variables are set in the Render dashboard and are never committed. See `docs/SETUP.md`
+at the repository root for the full list.

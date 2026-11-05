@@ -1,3 +1,6 @@
+/**
+ * Reads the shared exercise library.
+ */
 const Exercise = require('../models/Exercise');
 
 async function listExercises(req, res) {

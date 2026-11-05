@@ -1,3 +1,6 @@
+/**
+ * Definition of an achievement. These are seeded reference data.
+ */
 const mongoose = require('mongoose');
 
 const badgeSchema = new mongoose.Schema({

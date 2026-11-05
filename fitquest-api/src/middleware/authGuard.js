@@ -1,3 +1,6 @@
+/**
+ * Rejects requests without a valid JWT and attaches the user to the request.
+ */
 const { verifyToken } = require('../services/jwtService');
 const User = require('../models/User');
 

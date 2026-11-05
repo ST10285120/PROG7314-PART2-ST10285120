@@ -1,3 +1,7 @@
+/**
+ * Issues and verifies FitQuest JWTs.
+ * Reference: Auth0 (2026) Introduction to JSON Web Tokens. https://jwt.io/introduction
+ */
 const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET;
