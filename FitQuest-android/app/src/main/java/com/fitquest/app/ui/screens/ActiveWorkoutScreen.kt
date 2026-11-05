@@ -5,16 +5,21 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.fitquest.app.R
 import com.fitquest.app.data.local.entity.SetEntryEntity
 import com.fitquest.app.data.local.entity.WorkoutExerciseEntity
 import com.fitquest.app.data.remote.dto.ExerciseDto
@@ -23,24 +28,38 @@ import com.fitquest.app.ui.components.PrimaryButton
 import com.fitquest.app.ui.components.SectionHeader
 import com.fitquest.app.ui.components.Spacing
 import com.fitquest.app.ui.components.StatusChip
+import com.fitquest.app.ui.components.muscleGroupName
+import com.fitquest.app.util.WeightUnits
 import kotlinx.coroutines.delay
 
+private const val MIN_REPS = 1
+private const val MAX_REPS = 1000
+private const val MAX_WEIGHT_KG = 1000.0
+private const val WEIGHT_STEP_KG = 2.5
+private const val WEIGHT_STEP_LB = 5.0
+
+/**
+ * The live logging screen, designed for one thumb between sets: large steppers, a
+ * rest timer that starts itself, and validation that blocks impossible values.
+ */
 @Composable
 fun ActiveWorkoutScreen(
     exerciseLibrary: List<ExerciseDto>,
-    exercisesInWorkout: List<WorkoutExerciseEntity>,
     currentExercise: WorkoutExerciseEntity?,
+    nextExerciseName: String?,
     setsForCurrentExercise: List<SetEntryEntity>,
+    totalSets: Int,
     workoutStartedAt: Long?,
-    hasNextExercise: Boolean,
+    units: String,
     restTimerDefaultSec: Int = 90,
     onPickExercises: (List<ExerciseDto>) -> Unit,
     onLogSet: (reps: Int, weightKg: Double, rpe: Int?) -> Unit,
     onNextExercise: () -> Unit,
-    onFinishWorkout: () -> Unit
+    onFinishWorkout: () -> Unit,
+    onCancelWorkout: () -> Unit
 ) {
     var reps by remember { mutableStateOf("8") }
-    var weight by remember { mutableStateOf("20") }
+    var weight by remember(units) { mutableStateOf(if (units == WeightUnits.POUNDS) "45" else "20") }
     var showPicker by remember { mutableStateOf(currentExercise == null) }
     LaunchedEffect(currentExercise?.localId) {
         if (currentExercise != null) showPicker = false
@@ -53,7 +72,7 @@ fun ActiveWorkoutScreen(
         remainingRestSeconds = restTimerDefaultSec
         while ((remainingRestSeconds ?: 0) > 0) {
             delay(1000)
-            remainingRestSeconds = (remainingRestSeconds ?: 1) - 1
+            remainingRestSeconds = remainingRestSeconds?.minus(1)
         }
         remainingRestSeconds = null
     }
@@ -66,6 +85,14 @@ fun ActiveWorkoutScreen(
             delay(1000)
         }
     }
+
+    val repsValue = reps.toIntOrNull()
+    val weightValue = WeightUnits.parse(weight)
+    val weightKg = weightValue?.let { WeightUnits.toKg(it, units) }
+    val isSetValid = repsValue != null && repsValue in MIN_REPS..MAX_REPS &&
+        weightKg != null && weightKg in 0.0..MAX_WEIGHT_KG
+    val unitLabel = WeightUnits.label(units)
+    val weightStep = if (units == WeightUnits.POUNDS) WEIGHT_STEP_LB else WEIGHT_STEP_KG
 
     Column(modifier = Modifier.fillMaxSize().padding(Spacing.md)) {
         if (workoutStartedAt != null) {
@@ -86,6 +113,7 @@ fun ActiveWorkoutScreen(
         if (showPicker || currentExercise == null) {
             ExercisePicker(
                 exerciseLibrary = exerciseLibrary,
+                modifier = Modifier.weight(1f),
                 onConfirm = { selected ->
                     onPickExercises(selected)
                     showPicker = false
@@ -94,7 +122,7 @@ fun ActiveWorkoutScreen(
         } else {
             FitQuestCard(containerColor = MaterialTheme.colorScheme.primaryContainer) {
                 Text(
-                    "CURRENT EXERCISE",
+                    stringResource(R.string.current_exercise),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
@@ -104,34 +132,55 @@ fun ActiveWorkoutScreen(
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
-            Spacer(Modifier.height(Spacing.md))
+            Spacer(Modifier.height(Spacing.sm))
 
             Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                OutlinedTextField(
+                StepperField(
                     value = reps,
-                    onValueChange = { reps = it },
-                    label = { Text("Reps") },
-                    singleLine = true,
-                    shape = MaterialTheme.shapes.small,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f)
+                    label = stringResource(R.string.reps),
+                    keyboardType = KeyboardType.Number,
+                    isError = repsValue == null || repsValue !in MIN_REPS..MAX_REPS,
+                    modifier = Modifier.weight(1f),
+                    onValueChange = { reps = it.take(4) },
+                    onDecrease = { reps = ((repsValue ?: MIN_REPS) - 1).coerceAtLeast(MIN_REPS).toString() },
+                    onIncrease = { reps = ((repsValue ?: 0) + 1).coerceAtMost(MAX_REPS).toString() }
                 )
-                OutlinedTextField(
+                StepperField(
                     value = weight,
-                    onValueChange = { weight = it },
-                    label = { Text("Kg") },
-                    singleLine = true,
-                    shape = MaterialTheme.shapes.small,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.weight(1f)
+                    label = stringResource(R.string.weight_label, unitLabel),
+                    keyboardType = KeyboardType.Decimal,
+                    isError = weightKg == null || weightKg !in 0.0..MAX_WEIGHT_KG,
+                    modifier = Modifier.weight(1f),
+                    onValueChange = { weight = it.take(7) },
+                    onDecrease = { weight = stepLabel(((weightValue ?: 0.0) - weightStep).coerceAtLeast(0.0)) },
+                    onIncrease = { weight = stepLabel((weightValue ?: 0.0) + weightStep) }
                 )
             }
+
+            setsForCurrentExercise.lastOrNull()?.let { last ->
+                TextButton(
+                    onClick = {
+                        reps = last.reps.toString()
+                        weight = WeightUnits.number(last.weightKg, units)
+                    },
+                    modifier = Modifier.align(Alignment.End)
+                ) { Text(stringResource(R.string.same_as_last)) }
+            }
+
+            if (!isSetValid) {
+                Text(
+                    stringResource(R.string.error_invalid_set),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
             Spacer(Modifier.height(Spacing.sm))
-            PrimaryButton(text = "Log Set") {
-                val repsInt = reps.toIntOrNull() ?: return@PrimaryButton
-                val weightDouble = weight.toDoubleOrNull() ?: return@PrimaryButton
-                onLogSet(repsInt, weightDouble, null)
-                restTimerTrigger += 1
+            PrimaryButton(text = stringResource(R.string.log_set), enabled = isSetValid) {
+                if (repsValue != null && weightKg != null) {
+                    onLogSet(repsValue, weightKg, null)
+                    restTimerTrigger += 1
+                }
             }
 
             remainingRestSeconds?.let { seconds ->
@@ -146,31 +195,41 @@ fun ActiveWorkoutScreen(
                         )
                         Spacer(Modifier.width(Spacing.sm))
                         Text(
-                            "Rest: %d:%02d".format(seconds / 60, seconds % 60),
+                            stringResource(R.string.rest_timer, seconds / 60, seconds % 60),
                             style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.weight(1f)
                         )
+                        TextButton(onClick = { remainingRestSeconds = 0 }) {
+                            Text(stringResource(R.string.skip_rest))
+                        }
                     }
                 }
             }
 
-            if (hasNextExercise) {
+            if (nextExerciseName != null) {
                 Spacer(Modifier.height(Spacing.sm))
                 Button(
                     onClick = onNextExercise,
                     shape = MaterialTheme.shapes.small,
                     modifier = Modifier.fillMaxWidth().height(48.dp)
                 ) {
-                    Text("Next Exercise")
+                    Text(stringResource(R.string.next_exercise))
                     Spacer(Modifier.width(Spacing.sm))
                     Icon(Icons.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(18.dp))
                 }
+                Text(
+                    stringResource(R.string.up_next, nextExerciseName),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = Spacing.xs)
+                )
             }
 
-            Spacer(Modifier.height(Spacing.md))
-            SectionHeader("Logged sets")
+            Spacer(Modifier.height(Spacing.sm))
+            SectionHeader(stringResource(R.string.logged_sets))
             LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                items(setsForCurrentExercise) { set ->
+                items(setsForCurrentExercise, key = { it.localId }) { set ->
                     FitQuestCard {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -185,11 +244,18 @@ fun ActiveWorkoutScreen(
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(Modifier.width(Spacing.sm))
-                                Text("Set ${set.setNumber} — ${set.weightKg}kg × ${set.reps}")
+                                Text(
+                                    stringResource(
+                                        R.string.set_line,
+                                        set.setNumber,
+                                        WeightUnits.format(set.weightKg, units),
+                                        set.reps
+                                    )
+                                )
                             }
                             if (set.isPersonalRecord) {
                                 StatusChip(
-                                    text = "PR",
+                                    text = stringResource(R.string.pr),
                                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                                     contentColor = MaterialTheme.colorScheme.tertiary
                                 )
@@ -204,30 +270,88 @@ fun ActiveWorkoutScreen(
                 onClick = { showPicker = true },
                 shape = MaterialTheme.shapes.small,
                 modifier = Modifier.fillMaxWidth()
-            ) { Text("Add more exercises") }
+            ) { Text(stringResource(R.string.add_more_exercises)) }
         }
 
         Spacer(Modifier.height(Spacing.sm))
-        Button(
-            onClick = onFinishWorkout,
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+        if (totalSets > 0) {
+            Button(
+                onClick = onFinishWorkout,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.fillMaxWidth().height(52.dp)
+            ) { Text(stringResource(R.string.finish_workout), style = MaterialTheme.typography.labelLarge) }
+        } else {
+            OutlinedButton(
+                onClick = onCancelWorkout,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.fillMaxWidth().height(52.dp)
+            ) { Text(stringResource(R.string.cancel_workout), style = MaterialTheme.typography.labelLarge) }
+        }
+    }
+}
+
+/** Shows a stepped weight without a trailing ".0". */
+private fun stepLabel(value: Double): String =
+    if (value == Math.floor(value)) value.toLong().toString() else value.toString()
+
+/** A number field with large minus and plus buttons, which suit sweaty hands in a gym. */
+@Composable
+private fun StepperField(
+    value: String,
+    label: String,
+    keyboardType: KeyboardType,
+    isError: Boolean,
+    modifier: Modifier,
+    onValueChange: (String) -> Unit,
+    onDecrease: () -> Unit,
+    onIncrease: () -> Unit
+) {
+    Column(modifier = modifier) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(label) },
+            isError = isError,
+            singleLine = true,
+            textStyle = MaterialTheme.typography.titleLarge.copy(textAlign = TextAlign.Center),
             shape = MaterialTheme.shapes.small,
-            modifier = Modifier.fillMaxWidth().height(52.dp)
-        ) { Text("Finish Workout", style = MaterialTheme.typography.labelLarge) }
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(Spacing.xs))
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+            FilledTonalIconButton(
+                onClick = onDecrease,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.weight(1f).height(48.dp)
+            ) { Icon(Icons.Filled.Remove, contentDescription = stringResource(R.string.decrease)) }
+            FilledTonalIconButton(
+                onClick = onIncrease,
+                shape = MaterialTheme.shapes.small,
+                modifier = Modifier.weight(1f).height(48.dp)
+            ) { Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.increase)) }
+        }
     }
 }
 
 @Composable
 private fun ExercisePicker(
     exerciseLibrary: List<ExerciseDto>,
+    modifier: Modifier,
     onConfirm: (List<ExerciseDto>) -> Unit
 ) {
     val selectedIds = remember { mutableStateListOf<String>() }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        SectionHeader("Choose exercises")
+    Column(modifier = modifier.fillMaxWidth()) {
+        SectionHeader(stringResource(R.string.choose_exercises))
+        if (exerciseLibrary.isEmpty()) {
+            Text(
+                stringResource(R.string.library_unavailable),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            items(exerciseLibrary) { exercise ->
+            items(exerciseLibrary, key = { it._id }) { exercise ->
                 val isSelected = selectedIds.contains(exercise._id)
                 FitQuestCard(
                     containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
@@ -246,7 +370,7 @@ private fun ExercisePicker(
                         Column {
                             Text(exercise.name, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleSmall)
                             Text(
-                                "${exercise.muscleGroup} · ${exercise.equipment}",
+                                "${muscleGroupName(exercise.muscleGroup)} · ${exercise.equipment}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -257,11 +381,11 @@ private fun ExercisePicker(
         }
         Spacer(Modifier.height(Spacing.sm))
         PrimaryButton(
-            text = if (selectedIds.isEmpty()) "Select exercises to continue" else "Add ${selectedIds.size} to Workout",
+            text = if (selectedIds.isEmpty()) stringResource(R.string.select_to_continue)
+            else stringResource(R.string.add_to_workout, selectedIds.size),
             enabled = selectedIds.isNotEmpty(),
             onClick = {
-                val selected = exerciseLibrary.filter { selectedIds.contains(it._id) }
-                onConfirm(selected)
+                onConfirm(exerciseLibrary.filter { selectedIds.contains(it._id) })
             }
         )
     }
