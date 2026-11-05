@@ -122,7 +122,7 @@ function validateSyncBody({ clientId, title, exercises }) {
   return null;
 }
 
-/** Adds any exercises and sets the server has not seen. Known clientIds are skipped. */
+/** Applies the phone's exercises and sets. Known clientIds are skipped, missing sets removed. */
 async function mergeExercises(workout, userId, exercises) {
   const priorBestByExercise = new Map();
 
@@ -137,6 +137,10 @@ async function mergeExercises(workout, userId, exercises) {
       });
       we = workout.exercises[workout.exercises.length - 1];
     }
+
+    // A set the phone no longer sends was deleted by the user before finishing.
+    const keptIds = new Set(incoming.sets.map((set) => set.clientId));
+    we.sets = we.sets.filter((set) => !set.clientId || keptIds.has(set.clientId));
 
     const key = String(incoming.exerciseId);
     for (const set of [...incoming.sets].sort((a, b) => a.setNumber - b.setNumber)) {

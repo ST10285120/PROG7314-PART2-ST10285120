@@ -100,7 +100,12 @@ async function getProgress(req, res) {
     }
   }
 
-  return res.json({ volumeByWeek, prsByExercise, muscleGroupSplit });
+  return res.json({
+    volumeByWeek,
+    prsByExercise,
+    muscleGroupSplit,
+    totalWorkouts: workouts.length,
+  });
 }
 
 function isoWeekKey(date) {

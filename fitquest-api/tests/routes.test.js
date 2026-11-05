@@ -101,6 +101,27 @@ describe('POST /api/auth/sso', () => {
     expect(res.body.user.email).toBe('ghuser@example.com');
   });
 
+  it('returns 409 when a second provider uses the same email', async () => {
+    verifySsoToken.mockResolvedValueOnce({
+      ssoProvider: 'GOOGLE',
+      ssoSubjectId: 'google-1',
+      email: 'both@example.com',
+      username: 'Both',
+    });
+    await request(app).post('/api/auth/sso').send({ provider: 'GOOGLE', idToken: 'x' });
+
+    exchangeGitHubCode.mockResolvedValueOnce('gh-token');
+    verifyGitHubToken.mockResolvedValueOnce({
+      ssoProvider: 'GITHUB',
+      ssoSubjectId: 'gh-1',
+      email: 'both@example.com',
+      username: 'Both',
+    });
+    const res = await request(app).post('/api/auth/sso').send({ provider: 'GITHUB', code: 'c' });
+
+    expect(res.status).toBe(409);
+  });
+
   it('returns 401 when the GitHub code exchange fails', async () => {
     exchangeGitHubCode.mockRejectedValueOnce(new Error('bad code'));
     const res = await request(app).post('/api/auth/sso').send({ provider: 'GITHUB', code: 'expired' });
@@ -258,6 +279,7 @@ describe('Regression fixes from Part 2 feedback', () => {
 
     expect(res.body.muscleGroupSplit.LEGS).toBe(500);
     expect(res.body.prsByExercise.Squat).toBe(100);
+    expect(res.body.totalWorkouts).toBe(1);
   });
 });
 
@@ -324,6 +346,19 @@ describe('POST /api/workouts/sync (offline replay)', () => {
 
     expect(res.body.sets).toHaveLength(3);
     expect(res.body.completion).toBeNull();
+  });
+
+  it('removes a set the user deleted before finishing', async () => {
+    const token = await signInTestUser();
+    const exercise = await Exercise.create({ name: 'Row', muscleGroup: 'BACK', equipment: 'Barbell', type: 'STRENGTH' });
+    const payload = body(exercise._id);
+    const send = (data) => request(app).post('/api/workouts/sync').set('Authorization', `Bearer ${token}`).send(data);
+
+    await send(payload);
+    payload.exercises[0].sets.pop();
+    const res = await send(payload);
+
+    expect(res.body.sets).toHaveLength(1);
   });
 
   it('rejects invalid input with 400', async () => {
