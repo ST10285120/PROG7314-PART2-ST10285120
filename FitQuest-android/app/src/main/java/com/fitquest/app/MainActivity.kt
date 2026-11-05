@@ -10,6 +10,7 @@ import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -77,8 +78,11 @@ class MainActivity : AppCompatActivity() {
     private var stoppedAt = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         Log.d(TAG, "onCreate")
+        // A language change recreates this Activity, which must not lock the user out.
+        isLocked = savedInstanceState?.getBoolean(KEY_LOCKED, true) ?: true
         biometricEnabled = container.localCache.biometricEnabled
         handleIntent(intent)
 
@@ -98,6 +102,11 @@ class MainActivity : AppCompatActivity() {
                 onBiometricChange = ::changeBiometricSetting
             )
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_LOCKED, isLocked)
     }
 
     override fun onStart() {
@@ -176,6 +185,7 @@ class MainActivity : AppCompatActivity() {
     private companion object {
         const val TAG = "MainActivity"
         const val RELOCK_AFTER_MS = 5 * 60 * 1000L
+        const val KEY_LOCKED = "is_locked"
     }
 }
 
@@ -265,6 +275,7 @@ private fun topBarFor(route: String?): TopBarSpec = when {
     route == Destination.Progress.route -> TopBarSpec(R.string.nav_progress, showBack = false)
     route == Destination.Badges.route -> TopBarSpec(R.string.nav_badges, showBack = false)
     route == Destination.Settings.route -> TopBarSpec(R.string.nav_settings, showBack = false)
+    route == Destination.Routines.route -> TopBarSpec(R.string.my_routines, showBack = true)
     route?.startsWith("workout_detail/") == true -> TopBarSpec(R.string.title_workout_detail, showBack = true)
     else -> TopBarSpec(R.string.app_name, showBack = false)
 }
@@ -411,6 +422,7 @@ fun MainAppScaffold(
                         workoutViewModel.startWorkout(defaultTitle)
                         navController.navigate(Destination.ActiveWorkout.route)
                     },
+                    onOpenRoutines = { navController.navigate(Destination.Routines.route) },
                     onResumeWorkout = { workout ->
                         workoutViewModel.resumeWorkout(workout)
                         navController.navigate(Destination.ActiveWorkout.route)
@@ -424,6 +436,28 @@ fun MainAppScaffold(
                     onClickWorkout = { workoutLocalId ->
                         navController.navigate(Destination.WorkoutDetail.createRoute(workoutLocalId))
                     }
+                )
+            }
+
+            composable(Destination.Routines.route) {
+                val routinesViewModel: RoutinesViewModel = viewModel(factory = factory)
+                val routines by routinesViewModel.routines.collectAsStateWithLifecycle()
+                val library by routinesViewModel.exerciseLibrary.collectAsStateWithLifecycle()
+                val activeWorkout by homeViewModel.activeWorkout.collectAsStateWithLifecycle()
+                LaunchedEffect(isOnline) { routinesViewModel.load() }
+                RoutinesScreen(
+                    routines = routines,
+                    exerciseLibrary = library,
+                    hasActiveWorkout = activeWorkout != null,
+                    onStartRoutine = { routine ->
+                        workoutViewModel.resetForNewWorkout()
+                        workoutViewModel.startSuggestedWorkout(routine.name, routine.exercises)
+                        navController.navigate(Destination.ActiveWorkout.route) {
+                            popUpTo(Destination.Home.route)
+                        }
+                    },
+                    onSaveRoutine = routinesViewModel::saveRoutine,
+                    onDeleteRoutine = routinesViewModel::deleteRoutine
                 )
             }
 
@@ -564,7 +598,8 @@ fun MainAppScaffold(
                         avatarPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                     },
                     onTestNotification = { settingsViewModel.sendTestNotification() },
-                    onLogOut = { settingsViewModel.signOut() }
+                    onLogOut = { settingsViewModel.signOut() },
+                    onDeleteAccount = { settingsViewModel.deleteAccount() }
                 )
             }
         }
