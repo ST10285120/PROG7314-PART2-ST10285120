@@ -72,6 +72,13 @@ These are the features I specified during Part 1 and completed for the POE.
 - The summary now shows level, records and a level-up marker.
 - A language change no longer asks for biometrics again, and the rest timer stays accurate in the background.
 
+### Visual polish
+
+- Condensed heading font, with animated XP bars, charts and muscle split bars.
+- Redesigned live workout screen with a progress hero and circular rest timer.
+- Illustrated empty states, a stats hero on Progress and a profile hero in Settings.
+- Confetti and a counting XP total on the workout summary.
+
 ### Known limitations
 
 - Photos need a connection. They are not queued offline.
