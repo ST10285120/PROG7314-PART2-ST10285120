@@ -1,5 +1,6 @@
 package com.fitquest.app.data.repository
 
+import android.util.Log
 import com.fitquest.app.data.local.TokenStore
 import com.fitquest.app.data.remote.FitQuestApi
 import com.fitquest.app.data.remote.dto.SsoRequest
@@ -10,6 +11,7 @@ sealed class AuthResult {
     data class Error(val message: String) : AuthResult()
 }
 
+/** Exchanges a provider credential for a FitQuest JWT and owns the saved session. */
 class AuthRepository(
     private val api: FitQuestApi,
     private val tokenStore: TokenStore
@@ -29,16 +31,24 @@ class AuthRepository(
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
                 tokenStore.saveToken(body.token)
+                Log.i(TAG, "Signed in with ${request.provider}")
                 AuthResult.Success(body.user)
             } else {
+                Log.w(TAG, "Sign-in rejected with HTTP ${response.code()}")
                 AuthResult.Error("Sign-in failed (HTTP ${response.code()})")
             }
         } catch (e: Exception) {
+            Log.e(TAG, "Sign-in request failed", e)
             AuthResult.Error(e.message ?: "Network error during sign-in")
         }
     }
 
     fun signOut() {
         tokenStore.clearToken()
+        Log.i(TAG, "Signed out")
+    }
+
+    private companion object {
+        const val TAG = "AuthRepository"
     }
 }

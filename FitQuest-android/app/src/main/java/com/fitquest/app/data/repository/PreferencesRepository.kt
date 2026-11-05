@@ -3,6 +3,7 @@ package com.fitquest.app.data.repository
 import com.fitquest.app.data.remote.FitQuestApi
 import com.fitquest.app.data.remote.dto.PreferencesDto
 
+/** Reads and saves the settings held on the server. */
 class PreferencesRepository(private val api: FitQuestApi) {
 
     suspend fun getPreferences(): Result<PreferencesDto> = try {
