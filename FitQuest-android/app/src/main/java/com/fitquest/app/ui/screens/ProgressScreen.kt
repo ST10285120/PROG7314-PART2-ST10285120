@@ -2,8 +2,11 @@ package com.fitquest.app.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material3.*
@@ -11,33 +14,64 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.fitquest.app.BuildConfig
+import com.fitquest.app.R
 import com.fitquest.app.data.local.dao.PersonalRecordRow
 import com.fitquest.app.data.local.entity.WorkoutEntity
+import com.fitquest.app.data.remote.dto.ProgressPhotoDto
 import com.fitquest.app.data.repository.CompletionResult
 import com.fitquest.app.ui.components.ErrorBanner
 import com.fitquest.app.ui.components.FitQuestCard
+import com.fitquest.app.ui.components.LoadingBlock
 import com.fitquest.app.ui.components.PrimaryButton
 import com.fitquest.app.ui.components.SectionHeader
 import com.fitquest.app.ui.components.Spacing
+import com.fitquest.app.ui.components.SplitBar
 import com.fitquest.app.ui.components.StatusChip
+import com.fitquest.app.ui.components.VolumeLineChart
+import com.fitquest.app.ui.components.muscleGroupName
+import com.fitquest.app.util.BadgeText
+import com.fitquest.app.util.WeightUnits
+import com.fitquest.app.viewmodel.ProgressUiState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+private const val WEEKS_SHOWN = 8
+
+/**
+ * The dashboard from the Part 1 design. Charts and records come from the API, so they
+ * cover all devices; workout history comes from Room, which the API repopulates.
+ */
 @Composable
 fun ProgressScreen(
+    uiState: ProgressUiState,
     recentWorkouts: List<WorkoutEntity>,
-    personalRecords: List<PersonalRecordRow>,
-    onClickWorkout: (String) -> Unit
+    localRecords: List<PersonalRecordRow>,
+    units: String,
+    onClickWorkout: (String) -> Unit,
+    onAddPhoto: () -> Unit,
+    onDeletePhoto: (String) -> Unit
 ) {
     val dateFormat = remember { SimpleDateFormat("EEE, d MMM", Locale.getDefault()) }
+    val progress = uiState.progress
+    val totalVolumeKg = progress?.volumeByWeek?.values?.sum() ?: recentWorkouts.sumOf { it.totalVolumeKg }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(Spacing.md),
+        modifier = Modifier.fillMaxSize().padding(horizontal = Spacing.md),
+        contentPadding = PaddingValues(vertical = Spacing.md),
         verticalArrangement = Arrangement.spacedBy(Spacing.sm)
     ) {
+        if (uiState.isOfflineData) {
+            item { ErrorBanner(stringResource(R.string.offline_progress)) }
+        }
+
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 FitQuestCard(modifier = Modifier.weight(1f)) {
@@ -45,7 +79,7 @@ fun ProgressScreen(
                     Spacer(Modifier.height(4.dp))
                     Text("${recentWorkouts.size}", style = MaterialTheme.typography.headlineSmall)
                     Text(
-                        "Workouts logged",
+                        stringResource(R.string.stat_workouts),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -53,10 +87,9 @@ fun ProgressScreen(
                 FitQuestCard(modifier = Modifier.weight(1f)) {
                     Icon(Icons.Filled.EmojiEvents, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
                     Spacer(Modifier.height(4.dp))
-                    val totalXp = recentWorkouts.sumOf { it.xpEarned }
-                    Text("$totalXp", style = MaterialTheme.typography.headlineSmall)
+                    Text(WeightUnits.format(totalVolumeKg, units), style = MaterialTheme.typography.headlineSmall)
                     Text(
-                        "Total XP earned",
+                        stringResource(R.string.stat_volume),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -64,18 +97,110 @@ fun ProgressScreen(
             }
         }
 
-        item { SectionHeader("Workout History") }
-        if (recentWorkouts.isEmpty()) {
+        if (uiState.isLoading) item { LoadingBlock() }
+
+        item { SectionHeader(stringResource(R.string.volume_chart)) }
+        item {
+            FitQuestCard {
+                val weekly = progress?.volumeByWeek.orEmpty().toSortedMap().values.toList()
+                    .takeLast(WEEKS_SHOWN)
+                    .map { WeightUnits.fromKg(it, units) }
+                if (weekly.isEmpty()) {
+                    Text(stringResource(R.string.no_chart_data), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    VolumeLineChart(values = weekly)
+                }
+            }
+        }
+
+        item { SectionHeader(stringResource(R.string.muscle_split)) }
+        item {
+            FitQuestCard {
+                val split = progress?.muscleGroupSplit.orEmpty().entries.sortedByDescending { it.value }
+                val total = split.sumOf { it.value }
+                if (total <= 0.0) {
+                    Text(stringResource(R.string.no_chart_data), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    split.forEach { (group, volume) ->
+                        SplitBar(label = muscleGroupName(group), fraction = (volume / total).toFloat())
+                    }
+                }
+            }
+        }
+
+        item { SectionHeader(stringResource(R.string.personal_records)) }
+        val serverRecords = progress?.prsByExercise.orEmpty().entries.sortedByDescending { it.value }
+        val records = serverRecords.map { it.key to it.value }
+            .ifEmpty { localRecords.map { it.exerciseName to it.weightKg } }
+        if (records.isEmpty()) {
             item {
                 FitQuestCard {
+                    Text(stringResource(R.string.no_records), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        } else {
+            items(records, key = { it.first }) { (exerciseName, weightKg) ->
+                FitQuestCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(exerciseName, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleSmall)
+                        StatusChip(
+                            text = WeightUnits.format(weightKg, units),
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.tertiary
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SectionHeader(stringResource(R.string.progress_photos))
+                TextButton(onClick = onAddPhoto, enabled = !uiState.isUploadingPhoto) {
+                    Icon(Icons.Filled.AddAPhoto, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(Spacing.xs))
                     Text(
-                        "No completed workouts yet — finish one to see it here.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        stringResource(
+                            if (uiState.isUploadingPhoto) R.string.uploading else R.string.add_photo
+                        )
                     )
                 }
             }
         }
-        items(recentWorkouts) { workout ->
+        if (uiState.photoError) {
+            item { ErrorBanner(stringResource(R.string.photo_error)) }
+        }
+        item {
+            if (uiState.photos.isEmpty()) {
+                FitQuestCard {
+                    Text(stringResource(R.string.no_photos), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            } else {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    items(uiState.photos, key = { it.id }) { photo ->
+                        PhotoTile(photo = photo, onDelete = { onDeletePhoto(photo.id) })
+                    }
+                }
+            }
+        }
+
+        item { SectionHeader(stringResource(R.string.workout_history)) }
+        if (recentWorkouts.isEmpty()) {
+            item {
+                FitQuestCard {
+                    Text(stringResource(R.string.no_history), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+        items(recentWorkouts, key = { it.localId }) { workout ->
             FitQuestCard(onClick = { onClickWorkout(workout.localId) }) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
@@ -88,7 +213,7 @@ fun ProgressScreen(
                     }
                     if (!workout.synced) {
                         StatusChip(
-                            text = "Pending sync",
+                            text = stringResource(R.string.pending_sync),
                             containerColor = MaterialTheme.colorScheme.errorContainer,
                             contentColor = MaterialTheme.colorScheme.error
                         )
@@ -96,48 +221,41 @@ fun ProgressScreen(
                 }
                 Spacer(Modifier.height(Spacing.xs))
                 Text(
-                    "${"%.0f".format(workout.totalVolumeKg)} kg volume  ·  ${workout.xpEarned} XP",
+                    stringResource(
+                        R.string.history_line,
+                        WeightUnits.format(workout.totalVolumeKg, units),
+                        workout.xpEarned
+                    ),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
         }
-        item { Spacer(Modifier.height(Spacing.md)) }
-
-        item { SectionHeader("Personal Records") }
-        if (personalRecords.isEmpty()) {
-            item {
-                FitQuestCard {
-                    Text(
-                        "No personal records yet — your first set on any exercise becomes one automatically the next time you beat it.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        } else {
-            items(personalRecords) { pr ->
-                FitQuestCard {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Column {
-                            Text(pr.exerciseName, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleSmall)
-                            Text(
-                                dateFormat.format(Date(pr.achievedAt)),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        StatusChip(
-                            text = "${pr.weightKg}kg × ${pr.reps}",
-                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                            contentColor = MaterialTheme.colorScheme.tertiary
-                        )
-                    }
-                }
-            }
-        }
-        item { Spacer(Modifier.height(Spacing.md)) }
     }
 }
 
+@Composable
+private fun PhotoTile(photo: ProgressPhotoDto, onDelete: () -> Unit) {
+    Box(modifier = Modifier.size(136.dp).clip(MaterialTheme.shapes.medium)) {
+        AsyncImage(
+            model = BuildConfig.API_BASE_URL + photo.path,
+            contentDescription = stringResource(R.string.progress_photo),
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        FilledTonalIconButton(
+            onClick = onDelete,
+            modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(32.dp)
+        ) {
+            Icon(
+                Icons.Filled.Delete,
+                contentDescription = stringResource(R.string.delete_photo),
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}
+
+/** Shown after finishing. If the numbers are not confirmed yet, it says they are an estimate. */
 @Composable
 fun WorkoutSummaryScreen(completion: CompletionResult?, onDone: () -> Unit) {
     Column(
@@ -148,43 +266,63 @@ fun WorkoutSummaryScreen(completion: CompletionResult?, onDone: () -> Unit) {
             Icons.Filled.EmojiEvents,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.tertiary,
-            modifier = Modifier.size(48.dp)
+            modifier = Modifier.size(56.dp)
         )
         Spacer(Modifier.height(Spacing.sm))
-        Text("Workout Complete!", style = MaterialTheme.typography.headlineMedium)
+        Text(stringResource(R.string.workout_complete), style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(Spacing.lg))
 
         if (completion == null) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(strokeWidth = 2.5.dp, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(Spacing.sm))
-                Text("Saving…")
+                Text(stringResource(R.string.saving))
             }
         } else {
             FitQuestCard {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
-                        Text("XP Earned", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("+${completion.xpEarned}", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
+                        Text(
+                            stringResource(R.string.xp_earned),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "+${completion.xpEarned}",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        Text("Streak", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("${completion.streak} days", style = MaterialTheme.typography.headlineSmall)
+                        Text(
+                            stringResource(R.string.streak),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            stringResource(R.string.days_count, completion.streak),
+                            style = MaterialTheme.typography.headlineSmall
+                        )
                     }
                 }
                 if (completion.pendingSync) {
                     Spacer(Modifier.height(Spacing.md))
-                    ErrorBanner("Pending sync — these numbers are a local estimate and will update once you're back online.")
+                    ErrorBanner(stringResource(R.string.estimate_notice))
                 }
                 if (completion.badgeNames.isNotEmpty()) {
                     Spacer(Modifier.height(Spacing.md))
-                    Text("New badges", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.new_badges), style = MaterialTheme.typography.titleSmall)
                     Spacer(Modifier.height(Spacing.xs))
                     completion.badgeNames.forEach { name ->
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
-                            Icon(Icons.Filled.EmojiEvents, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(18.dp))
+                            Icon(
+                                Icons.Filled.EmojiEvents,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.tertiary,
+                                modifier = Modifier.size(18.dp)
+                            )
                             Spacer(Modifier.width(Spacing.xs))
-                            Text(name)
+                            Text(BadgeText.nameRes(name)?.let { stringResource(it) } ?: name)
                         }
                     }
                 }
@@ -192,6 +330,6 @@ fun WorkoutSummaryScreen(completion: CompletionResult?, onDone: () -> Unit) {
         }
 
         Spacer(Modifier.height(Spacing.lg))
-        PrimaryButton(text = "Done", onClick = onDone)
+        PrimaryButton(text = stringResource(R.string.done), onClick = onDone)
     }
 }

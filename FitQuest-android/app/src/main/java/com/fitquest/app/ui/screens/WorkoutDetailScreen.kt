@@ -8,21 +8,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.fitquest.app.R
 import com.fitquest.app.ui.components.FitQuestCard
 import com.fitquest.app.ui.components.LoadingBlock
 import com.fitquest.app.ui.components.SectionHeader
 import com.fitquest.app.ui.components.Spacing
 import com.fitquest.app.ui.components.StatusChip
+import com.fitquest.app.util.WeightUnits
 import com.fitquest.app.viewmodel.WorkoutDetailUiState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/** Read-only view of a past workout. */
 @Composable
-fun WorkoutDetailScreen(uiState: WorkoutDetailUiState) {
-    val dateFormat = remember { SimpleDateFormat("EEEE, d MMMM · h:mm a", Locale.getDefault()) }
+fun WorkoutDetailScreen(uiState: WorkoutDetailUiState, units: String) {
+    val dateFormat = remember { SimpleDateFormat("EEEE, d MMMM · HH:mm", Locale.getDefault()) }
 
     if (uiState.isLoading) {
         LoadingBlock(modifier = Modifier.fillMaxSize())
@@ -32,7 +36,7 @@ fun WorkoutDetailScreen(uiState: WorkoutDetailUiState) {
     val detail = uiState.detail
     if (detail == null) {
         Box(modifier = Modifier.fillMaxSize().padding(Spacing.lg), contentAlignment = Alignment.Center) {
-            Text("Couldn't find that workout.")
+            Text(stringResource(R.string.workout_not_found))
         }
         return
     }
@@ -57,12 +61,12 @@ fun WorkoutDetailScreen(uiState: WorkoutDetailUiState) {
                 Row(horizontalArrangement = Arrangement.spacedBy(Spacing.lg)) {
                     Column {
                         Text(
-                            "${"%.0f".format(detail.workout.totalVolumeKg)} kg",
+                            WeightUnits.format(detail.workout.totalVolumeKg, units),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Text(
-                            "Total volume",
+                            stringResource(R.string.total_volume),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -74,7 +78,7 @@ fun WorkoutDetailScreen(uiState: WorkoutDetailUiState) {
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Text(
-                            "XP earned",
+                            stringResource(R.string.xp_earned),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -83,7 +87,7 @@ fun WorkoutDetailScreen(uiState: WorkoutDetailUiState) {
             }
         }
 
-        item { SectionHeader("Exercises") }
+        item { SectionHeader(stringResource(R.string.exercises)) }
 
         items(detail.exercises) { exercise ->
             FitQuestCard {
@@ -94,10 +98,10 @@ fun WorkoutDetailScreen(uiState: WorkoutDetailUiState) {
                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Set ${set.setNumber} — ${set.weightKg}kg × ${set.reps}")
+                        Text(stringResource(R.string.set_line, set.setNumber, WeightUnits.format(set.weightKg, units), set.reps))
                         if (set.isPersonalRecord) {
                             StatusChip(
-                                text = "PR",
+                                text = stringResource(R.string.pr),
                                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                                 contentColor = MaterialTheme.colorScheme.tertiary
                             )
