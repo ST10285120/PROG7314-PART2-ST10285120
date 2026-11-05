@@ -423,6 +423,50 @@ describe('Badges, notifications and photos', () => {
   });
 });
 
+describe('Routines and account deletion', () => {
+  const routine = (exerciseId) => ({
+    id: 'routine-1',
+    name: 'Push Day',
+    exercises: [{ exerciseId: String(exerciseId), name: 'Bench', muscleGroup: 'CHEST' }],
+  });
+
+  it('saves routines and returns them on a later read', async () => {
+    const token = await signInTestUser();
+    const exercise = await Exercise.create({ name: 'Bench', muscleGroup: 'CHEST', equipment: 'Barbell', type: 'STRENGTH' });
+
+    const saved = await request(app)
+      .put('/api/users/me/routines')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ routines: [routine(exercise._id)] });
+    const read = await request(app).get('/api/users/me/routines').set('Authorization', `Bearer ${token}`);
+
+    expect(saved.status).toBe(200);
+    expect(read.body.routines[0].name).toBe('Push Day');
+    expect(read.body.routines[0].exercises).toHaveLength(1);
+  });
+
+  it('rejects a routine with no exercises', async () => {
+    const token = await signInTestUser();
+    const res = await request(app)
+      .put('/api/users/me/routines')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ routines: [{ id: 'r', name: 'Empty', exercises: [] }] });
+    expect(res.status).toBe(400);
+  });
+
+  it('deletes the account and its data, and the old token stops working', async () => {
+    const token = await signInTestUser();
+    await request(app).post('/api/workouts').set('Authorization', `Bearer ${token}`).send({ title: 'Day' });
+
+    const res = await request(app).delete('/api/users/me').set('Authorization', `Bearer ${token}`);
+    const after = await request(app).get('/api/users/me').set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(204);
+    expect(after.status).toBe(401);
+    expect(await User.countDocuments({ email: 'test@example.com' })).toBe(0);
+  });
+});
+
 describe('GET /health', () => {
   it('returns ok', async () => {
     const res = await request(app).get('/health');
