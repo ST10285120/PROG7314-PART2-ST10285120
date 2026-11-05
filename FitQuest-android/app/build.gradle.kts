@@ -1,8 +1,22 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
+}
+
+// FCM needs google-services.json, which is not committed. The plugin
+// is only applied when the file exists so CI and fresh clones can still build the app.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
+// Signing details stay out of Git. See docs/SETUP.md for how to create this file.
+val keystoreProperties = Properties().apply {
+    val propertiesFile = rootProject.file("keystore.properties")
+    if (propertiesFile.exists()) propertiesFile.inputStream().use { load(it) }
 }
 
 android {
@@ -13,12 +27,12 @@ android {
         applicationId = "com.fitquest.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "2.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "API_BASE_URL", "\"https://fitquest-api.onrender.com/\"")
+        buildConfigField("String", "API_BASE_URL", "\"https://prog7314-part2-st10285120.onrender.com/\"")
 
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"507538573900-njo9b9vfnflh1ugrlfh715dt20l3topf.apps.googleusercontent.com\"")
 
@@ -27,16 +41,23 @@ android {
         buildConfigField("String", "GITHUB_CLIENT_ID", "\"Ov23liko6pyW9vX72D1X\"")
     }
 
-       buildTypes {
-        debug {
-         
-          
-            buildConfigField("String", "API_BASE_URL", "\"https://prog7314-part2-st10285120.onrender.com/\"")
+    signingConfigs {
+        if (keystoreProperties.isNotEmpty()) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
         }
+    }
+
+    buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            buildConfigField("String", "API_BASE_URL", "\"https://prog7314-part2-st10285120.onrender.com/\"")
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 
@@ -53,6 +74,11 @@ android {
         buildConfig = true
     }
 
+    testOptions {
+        // Lets android.util.Log calls run as no-ops in JVM unit tests.
+        unitTests.isReturnDefaultValues = true
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -62,6 +88,12 @@ android {
 
 dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.biometric:biometric:1.1.0")
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
+    implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+    implementation("com.google.firebase:firebase-messaging")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.6")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.6")
@@ -78,6 +110,7 @@ dependencies {
 
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("com.google.code.gson:gson:2.11.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     implementation("androidx.room:room-runtime:2.6.1")
