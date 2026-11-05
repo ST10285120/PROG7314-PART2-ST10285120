@@ -14,6 +14,7 @@ data class BadgesUiState(
     val errorMessage: String? = null
 )
 
+/** Loads the full badge catalog, with progress towards the locked ones. */
 class BadgesViewModel(private val workoutRepository: WorkoutRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BadgesUiState())
@@ -26,7 +27,7 @@ class BadgesViewModel(private val workoutRepository: WorkoutRepository) : ViewMo
     fun load() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
-            workoutRepository.getBadges().fold(
+            workoutRepository.getBadgeCatalog().fold(
                 onSuccess = { badges -> _uiState.value = BadgesUiState(badges = badges, isLoading = false) },
                 onFailure = { err ->
                     _uiState.value = _uiState.value.copy(

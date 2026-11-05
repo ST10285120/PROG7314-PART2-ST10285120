@@ -13,6 +13,7 @@ data class WorkoutDetailUiState(
     val isLoading: Boolean = true
 )
 
+/** Loads one past workout from Room, so details are available offline. */
 class WorkoutDetailViewModel(private val workoutRepository: WorkoutRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WorkoutDetailUiState())

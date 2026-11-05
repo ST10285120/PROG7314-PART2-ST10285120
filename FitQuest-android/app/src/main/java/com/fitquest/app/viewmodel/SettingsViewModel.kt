@@ -3,8 +3,11 @@ package com.fitquest.app.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fitquest.app.data.remote.dto.PreferencesDto
+import com.fitquest.app.data.remote.dto.UserDto
 import com.fitquest.app.data.repository.AuthRepository
 import com.fitquest.app.data.repository.PreferencesRepository
+import com.fitquest.app.data.repository.ProfileRepository
+import com.fitquest.app.data.repository.WorkoutRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -14,16 +17,24 @@ data class SettingsUiState(
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val errorMessage: String? = null,
-    val signedOut: Boolean = false
+    val signedOut: Boolean = false,
+    val isUploadingAvatar: Boolean = false,
+    val avatarError: Boolean = false,
+    val testNotificationResult: Int? = null
 )
 
+/** Settings, account card, profile picture and sign-out. */
 class SettingsViewModel(
     private val preferencesRepository: PreferencesRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val profileRepository: ProfileRepository,
+    private val workoutRepository: WorkoutRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState
+
+    val profile: StateFlow<UserDto?> = profileRepository.profile
 
     init {
         load()
@@ -44,9 +55,14 @@ class SettingsViewModel(
         }
     }
 
+    /** This ViewModel outlives a sign-out, so the flag must not carry into the next session. */
+    fun consumeSignedOut() {
+        _uiState.value = SettingsUiState()
+    }
+
     fun updatePreferences(update: (PreferencesDto) -> PreferencesDto) {
         val newPrefs = update(_uiState.value.preferences)
-        _uiState.value = _uiState.value.copy(preferences = newPrefs, isSaving = true)
+        _uiState.value = _uiState.value.copy(preferences = newPrefs, isSaving = true, errorMessage = null)
         viewModelScope.launch {
             preferencesRepository.updatePreferences(newPrefs).fold(
                 onSuccess = { saved -> _uiState.value = _uiState.value.copy(preferences = saved, isSaving = false) },
@@ -64,8 +80,32 @@ class SettingsViewModel(
         updatePreferences { it.copy(reminderTime = reminderTime, restTimerDefaultSec = restTimerDefaultSec) }
     }
 
+    fun uploadAvatar(jpegBytes: ByteArray) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isUploadingAvatar = true, avatarError = false)
+            val result = profileRepository.uploadAvatar(jpegBytes)
+            _uiState.value = _uiState.value.copy(isUploadingAvatar = false, avatarError = result.isFailure)
+        }
+    }
+
+    fun reportAvatarError() {
+        _uiState.value = _uiState.value.copy(avatarError = true)
+    }
+
+    fun sendTestNotification() {
+        viewModelScope.launch {
+            val delivered = profileRepository.sendTestNotification().getOrDefault(0)
+            _uiState.value = _uiState.value.copy(testNotificationResult = delivered)
+        }
+    }
+
+    /** Uploads what it can first, so a sign-out never silently loses a workout. */
     fun signOut() {
-        authRepository.signOut()
-        _uiState.value = _uiState.value.copy(signedOut = true)
+        viewModelScope.launch {
+            workoutRepository.clearLocalDataIfSynced()
+            authRepository.signOut()
+            profileRepository.clear()
+            _uiState.value = _uiState.value.copy(signedOut = true)
+        }
     }
 }

@@ -28,6 +28,7 @@ data class WorkoutUiState(
     val errorMessage: String? = null
 )
 
+/** State of the workout in progress. Every action is saved to Room by the repository. */
 @OptIn(ExperimentalCoroutinesApi::class)
 class WorkoutViewModel(private val workoutRepository: WorkoutRepository) : ViewModel() {
 
@@ -50,21 +51,20 @@ class WorkoutViewModel(private val workoutRepository: WorkoutRepository) : ViewM
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    /** Sets logged across all exercises. A workout with none cannot be finished. */
+    val totalSets: StateFlow<Int> = workoutExercisesFlow
+        .flatMapLatest { id ->
+            if (id == null) flowOf(0)
+            else workoutRepository.observeSetCount(id)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
     fun startWorkout(title: String) {
         viewModelScope.launch {
             val id = workoutRepository.startWorkout(title)
             _uiState.value = _uiState.value.copy(workoutLocalId = id, workoutStartedAt = System.currentTimeMillis())
             workoutExercisesFlow.value = id
             loadExerciseLibrary()
-        }
-    }
-    fun startWorkoutWithSelection(title: String, exercises: List<ExerciseDto>) {
-        viewModelScope.launch {
-            val id = workoutRepository.startWorkoutWithExerciseSelection(title, exercises)
-            _uiState.value = _uiState.value.copy(workoutLocalId = id, workoutStartedAt = System.currentTimeMillis())
-            workoutExercisesFlow.value = id
-            loadExerciseLibrary()
-            jumpToFirstExercise(id)
         }
     }
     fun startSuggestedWorkout(title: String, exercises: List<SuggestedWorkoutExerciseDto>) {
@@ -152,6 +152,13 @@ class WorkoutViewModel(private val workoutRepository: WorkoutRepository) : ViewM
             val result = workoutRepository.completeWorkout(workoutId)
             _uiState.value = _uiState.value.copy(completion = result)
         }
+    }
+
+    /** Cancels a workout that has no logged sets. */
+    fun discardWorkout() {
+        val workoutId = _uiState.value.workoutLocalId ?: return
+        viewModelScope.launch { workoutRepository.discardWorkout(workoutId) }
+        resetForNewWorkout()
     }
 
     fun resetForNewWorkout() {
