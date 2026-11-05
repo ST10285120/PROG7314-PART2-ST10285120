@@ -1,3 +1,6 @@
+/**
+ * Builds the Express app without listening, so tests can use it directly.
+ */
 const express = require('express');
 const cors = require('cors');
 const routes = require('./routes');
@@ -10,9 +13,13 @@ function createApp() {
   app.get('/health', (req, res) => res.json({ status: 'ok' }));
   app.use('/api', routes);
 
+  // Last-resort handler. Body-parser errors carry their own status (400 for bad JSON,
+  // 413 for an oversized photo); anything else is an unexpected 500.
   app.use((err, req, res, next) => {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
+    const status = err.status || err.statusCode || 500;
+    if (status >= 500) console.error(err);
+    const message = status >= 500 ? 'Internal server error' : err.message;
+    res.status(status).json({ error: message });
   });
 
   return app;
