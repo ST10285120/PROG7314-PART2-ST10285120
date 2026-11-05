@@ -7,6 +7,7 @@ import com.fitquest.app.data.remote.dto.UserDto
 import com.fitquest.app.data.repository.ProfileRepository
 import com.fitquest.app.data.repository.WorkoutRepository
 import com.fitquest.app.testutil.MainDispatcherRule
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -23,6 +24,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
 
     @get:Rule

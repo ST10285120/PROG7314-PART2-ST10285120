@@ -282,6 +282,7 @@ class WorkoutRepositoryTest {
 
     @Test
     fun `getExerciseLibrary fails when offline with an empty cache`() = runTest {
+        whenever(localCache.getExercises()).thenReturn(null)
         whenever(api.listExercises(anyOrNull(), anyOrNull())).thenThrow(RuntimeException("offline"))
 
         assertTrue(repository.getExerciseLibrary().isFailure)
