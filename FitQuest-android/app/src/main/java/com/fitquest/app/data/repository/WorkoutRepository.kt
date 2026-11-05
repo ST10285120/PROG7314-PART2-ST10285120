@@ -88,6 +88,8 @@ class WorkoutRepository(
     fun observeSetsForWorkoutExercise(weLocalId: String): Flow<List<SetEntryEntity>> =
         setEntryDao.observeForWorkoutExercise(weLocalId)
 
+    fun observeActiveWorkout(): Flow<WorkoutEntity?> = workoutDao.observeActive()
+
     fun observeSetCount(workoutLocalId: String): Flow<Int> =
         setEntryDao.observeSetCount(workoutLocalId)
 
@@ -154,6 +156,15 @@ class WorkoutRepository(
             syncInBackground(workoutExercise.workoutLocalId)
         }
         return entry
+    }
+
+    /** Removes a mistaken set. The next sync removes it from the server too. */
+    suspend fun deleteSet(set: SetEntryEntity) {
+        setEntryDao.delete(set.localId)
+        workoutExerciseDao.getByLocalId(set.workoutExerciseLocalId)?.let { workoutExercise ->
+            workoutDao.markUnsynced(workoutExercise.workoutLocalId)
+            syncInBackground(workoutExercise.workoutLocalId)
+        }
     }
 
     /** Removes an unused workout, for when the user cancels before logging a set. */

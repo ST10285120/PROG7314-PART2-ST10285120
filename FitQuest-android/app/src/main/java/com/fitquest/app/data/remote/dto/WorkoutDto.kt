@@ -81,7 +81,8 @@ data class SuggestedWorkoutResponse(
 data class ProgressResponse(
     val volumeByWeek: Map<String, Double>,
     val prsByExercise: Map<String, Double>,
-    val muscleGroupSplit: Map<String, Double>
+    val muscleGroupSplit: Map<String, Double>,
+    val totalWorkouts: Int = 0
 )
 
 /** A completed workout from the server, used to rebuild history on a new phone. */

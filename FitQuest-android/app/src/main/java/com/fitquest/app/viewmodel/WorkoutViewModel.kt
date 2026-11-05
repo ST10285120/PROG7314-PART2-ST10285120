@@ -3,6 +3,7 @@ package com.fitquest.app.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fitquest.app.data.local.entity.SetEntryEntity
+import com.fitquest.app.data.local.entity.WorkoutEntity
 import com.fitquest.app.data.local.entity.WorkoutExerciseEntity
 import com.fitquest.app.data.remote.dto.ExerciseDto
 import com.fitquest.app.data.remote.dto.SuggestedWorkoutExerciseDto
@@ -152,6 +153,21 @@ class WorkoutViewModel(private val workoutRepository: WorkoutRepository) : ViewM
             val result = workoutRepository.completeWorkout(workoutId)
             _uiState.value = _uiState.value.copy(completion = result)
         }
+    }
+
+    /** Reopens a workout that was left unfinished, for example after the app was closed. */
+    fun resumeWorkout(workout: WorkoutEntity) {
+        if (_uiState.value.workoutLocalId == workout.localId) return
+        _uiState.value = WorkoutUiState(workoutLocalId = workout.localId, workoutStartedAt = workout.startedAt)
+        workoutExercisesFlow.value = workout.localId
+        viewModelScope.launch {
+            loadExerciseLibrary()
+            jumpToFirstExercise(workout.localId)
+        }
+    }
+
+    fun deleteSet(set: SetEntryEntity) {
+        viewModelScope.launch { workoutRepository.deleteSet(set) }
     }
 
     /** Cancels a workout that has no logged sets. */

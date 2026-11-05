@@ -1,5 +1,6 @@
 package com.fitquest.app.viewmodel
 
+import com.fitquest.app.data.local.entity.WorkoutEntity
 import com.fitquest.app.data.remote.dto.ExerciseDto
 import com.fitquest.app.data.repository.CompletionResult
 import com.fitquest.app.data.repository.WorkoutRepository
@@ -99,6 +100,17 @@ class WorkoutViewModelTest {
         viewModel.finishWorkout()
 
         assertEquals(completion, viewModel.uiState.value.completion)
+    }
+
+    @Test
+    fun `resumeWorkout reopens an unfinished workout with its original start time`() = runTest {
+        whenever(repo.getExerciseLibrary()).thenReturn(Result.success(emptyList()))
+        val workout = WorkoutEntity(localId = "w9", title = "Push Day", startedAt = 123L)
+
+        viewModel.resumeWorkout(workout)
+
+        assertEquals("w9", viewModel.uiState.value.workoutLocalId)
+        assertEquals(123L, viewModel.uiState.value.workoutStartedAt)
     }
 
     @Test

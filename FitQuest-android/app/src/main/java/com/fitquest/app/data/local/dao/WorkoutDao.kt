@@ -27,6 +27,10 @@ interface WorkoutDao {
     @Query("SELECT COALESCE(SUM(xpEarned), 0) FROM workouts WHERE completedAt IS NOT NULL AND synced = 0")
     fun observePendingXp(): Flow<Int>
 
+    /** The newest workout that was started but not finished, if any. */
+    @Query("SELECT * FROM workouts WHERE completedAt IS NULL ORDER BY startedAt DESC LIMIT 1")
+    fun observeActive(): Flow<WorkoutEntity?>
+
     @Query("UPDATE workouts SET synced = 0 WHERE localId = :localId")
     suspend fun markUnsynced(localId: String)
 

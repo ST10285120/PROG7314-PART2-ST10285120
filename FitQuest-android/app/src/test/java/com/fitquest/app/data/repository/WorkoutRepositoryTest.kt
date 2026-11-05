@@ -115,6 +115,17 @@ class WorkoutRepositoryTest {
     }
 
     @Test
+    fun `deleteSet removes it and marks the workout unsynced`() = runTest {
+        givenStoredWorkout()
+        whenever(api.syncWorkout(any())).thenReturn(syncResponse())
+
+        repository.deleteSet(set)
+
+        verify(setEntryDao).delete("s1")
+        verify(workoutDao).markUnsynced("w1")
+    }
+
+    @Test
     fun `logSet does not estimate a PR when there is no prior best`() = runTest {
         whenever(setEntryDao.getBestWeightForExercise("ex1")).thenReturn(null)
 

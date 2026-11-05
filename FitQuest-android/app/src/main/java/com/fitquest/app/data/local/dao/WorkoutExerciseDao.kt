@@ -33,6 +33,9 @@ interface SetEntryDao {
     @Query("SELECT * FROM set_entries WHERE workoutExerciseLocalId = :weLocalId ORDER BY setNumber ASC")
     suspend fun getForWorkoutExercise(weLocalId: String): List<SetEntryEntity>
 
+    @Query("DELETE FROM set_entries WHERE localId = :localId")
+    suspend fun delete(localId: String)
+
     /** Replaces the local PR estimate with the server's decision. */
     @Query("UPDATE set_entries SET isPersonalRecord = :isPersonalRecord WHERE localId = :localId")
     suspend fun updatePersonalRecord(localId: String, isPersonalRecord: Boolean)
