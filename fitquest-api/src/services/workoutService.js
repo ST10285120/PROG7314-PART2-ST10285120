@@ -44,7 +44,7 @@ async function completeOnce(workoutId, user, completedAt) {
   const workout = await Workout.findOneAndUpdate(
     { _id: workoutId, userId: user._id, completedAt: null },
     { $set: { completedAt: completedAt ? new Date(completedAt) : new Date() } },
-    { new: true }
+    { returnDocument: 'after' }
   );
 
   if (!workout) {
