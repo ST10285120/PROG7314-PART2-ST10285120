@@ -1,6 +1,7 @@
 package com.fitquest.app
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -30,9 +31,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.core.os.LocaleListCompat
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -240,6 +244,15 @@ fun FitQuestRoot(
                 "LIGHT" -> false
                 else -> isSystemInDarkTheme()
             }
+            // Edge-to-edge bars follow the device theme, but this app can differ from it.
+            val view = LocalView.current
+            SideEffect {
+                (view.context as? Activity)?.window?.let { window ->
+                    val controller = WindowCompat.getInsetsController(window, view)
+                    controller.isAppearanceLightStatusBars = !useDark
+                    controller.isAppearanceLightNavigationBars = !useDark
+                }
+            }
             FitQuestTheme(useDarkTheme = useDark) {
                 // The lock covers the app instead of replacing it. Removing the app would
                 // reset navigation and throw the user out of a workout in progress.
@@ -289,6 +302,7 @@ private fun NavHostController.navigateToTab(route: String) {
     }
 }
 
+/** The signed-in app: top bar, bottom tabs, navigation graph and session-wide effects. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainAppScaffold(
@@ -621,6 +635,6 @@ private fun androidx.compose.foundation.layout.RowScope.TabItem(
         selected = currentRoute == route,
         onClick = { navController.navigateToTab(route) },
         icon = { Icon(icon, contentDescription = label) },
-        label = { Text(label, maxLines = 1) }
+        label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) }
     )
 }
