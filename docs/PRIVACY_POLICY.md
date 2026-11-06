@@ -1,6 +1,6 @@
 # FitQuest privacy policy
 
-**Effective date:** add your publication date
+**Effective date:** 6 November 2026
 
 FitQuest is a student project built for the PROG7314 module. This policy explains what the app collects and why.
 
@@ -38,4 +38,4 @@ FitQuest is not intended for children under 13.
 
 ## Contact
 
-Add your email address.
+Carsonanorman@gmail.com

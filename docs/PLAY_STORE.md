@@ -1,26 +1,11 @@
 # Play Store readiness
 
-## Release checklist
-
-- [x] Application ID: `com.fitquest.app`
-- [x] Version: 2.0.0 (code 2)
-- [x] Target SDK 36, minimum SDK 26
-- [x] R8 minification and resource shrinking on release builds
-- [x] Release signing configured outside Git
-- [x] Network logging removed from release builds
-- [x] Privacy policy written and linked in the app
-- [x] In-app account deletion in Settings
-- [x] App icon and feature graphic in `docs/store/`
-- [ ] Signed release APK and app bundle built
-- [ ] Phone screenshots added to `docs/store/screenshots/`
-- [ ] Release SHA-1 added to Google Cloud and Firebase
-- [ ] Privacy policy published at a public URL
 
 ## Store listing
 
 **App name:** FitQuest: Gym Workout RPG
 
-**Short description (80 characters maximum):**
+**Short description:**
 
 Log strength workouts offline. Earn XP, level up, build streaks and unlock badges.
 
@@ -49,9 +34,9 @@ Sign in with Google or GitHub. There is no password to remember.
 
 **Category:** Health & Fitness
 
-**Contact email:** add your email address
+**Contact email:** Carsonanorman@gmail.com
 
-**Privacy policy URL:** add the public link to `docs/PRIVACY_POLICY.md`
+**Privacy policy URL:** https://github.com/ST10285120/PROG7314-PART2-ST10285120/blob/main/docs/PRIVACY_POLICY.md
 
 ## Data safety answers
 
