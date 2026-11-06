@@ -131,6 +131,7 @@ an `Authorization: Bearer <JWT>` header.
 - [Play Store readiness](docs/PLAY_STORE.md)
 - [Privacy policy](docs/PRIVACY_POLICY.md)
 - [Signed production APK (v2.0.0)](https://github.com/ST10285120/PROG7314-PART2-ST10285120/releases/tag/v2.0.0)
+- [Evidence screenshots](docs/EVIDENCE.md)
 
 ## References
 
