@@ -1,3 +1,6 @@
+/**
+ * Profile, settings, progress, badges, routines, photos and account deletion.
+ */
 const mongoose = require('mongoose');
 const UserPreferences = require('../models/UserPreferences');
 const UserBadge = require('../models/UserBadge');
@@ -86,8 +89,9 @@ function validateRoutines(routines) {
       return 'each routine needs at least one exercise';
     }
     for (const exercise of exercises) {
-      if (!mongoose.isValidObjectId(exercise?.exerciseId) || typeof exercise.name !== 'string') {
-        return 'each exercise needs a valid exerciseId and name';
+      const hasText = typeof exercise?.name === 'string' && typeof exercise?.muscleGroup === 'string';
+      if (!mongoose.isValidObjectId(exercise?.exerciseId) || !hasText) {
+        return 'each exercise needs a valid exerciseId, name and muscleGroup';
       }
     }
   }
