@@ -34,11 +34,13 @@ data class CompletionResult(
     val leveledUp: Boolean = false
 )
 
+/** An exercise and its sets, for the workout detail screen. */
 data class WorkoutExerciseDetail(
     val exerciseName: String,
     val sets: List<SetEntryEntity>
 )
 
+/** A finished workout with everything logged in it. */
 data class WorkoutDetail(
     val workout: WorkoutEntity,
     val exercises: List<WorkoutExerciseDetail>

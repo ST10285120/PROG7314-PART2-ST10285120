@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+/** What the workout detail screen displays. */
 data class WorkoutDetailUiState(
     val detail: WorkoutDetail? = null,
     val isLoading: Boolean = true

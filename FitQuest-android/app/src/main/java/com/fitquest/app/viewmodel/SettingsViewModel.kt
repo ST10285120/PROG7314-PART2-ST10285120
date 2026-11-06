@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+/** What the Settings screen displays. */
 data class SettingsUiState(
     val preferences: PreferencesDto = PreferencesDto("KG", "SYSTEM", "18:00", 90),
     val isLoading: Boolean = true,

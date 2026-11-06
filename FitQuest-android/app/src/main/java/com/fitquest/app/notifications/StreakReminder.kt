@@ -40,6 +40,7 @@ class StreakReminderWorker(context: Context, params: WorkerParameters) : Corouti
     }
 }
 
+/** Schedules the daily streak check with WorkManager. */
 object ReminderScheduler {
 
     private const val TAG = "ReminderScheduler"

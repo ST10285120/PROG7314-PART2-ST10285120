@@ -1,3 +1,6 @@
+/**
+ * Maps every REST endpoint to its controller.
+ */
 const express = require('express');
 const authGuard = require('../middleware/authGuard');
 

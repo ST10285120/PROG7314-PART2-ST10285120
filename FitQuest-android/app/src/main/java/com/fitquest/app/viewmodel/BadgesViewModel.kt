@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+/** What the Badges screen displays. */
 data class BadgesUiState(
     val badges: List<BadgeDto> = emptyList(),
     val isLoading: Boolean = true,

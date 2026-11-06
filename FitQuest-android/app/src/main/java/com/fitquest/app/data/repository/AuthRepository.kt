@@ -6,6 +6,7 @@ import com.fitquest.app.data.remote.FitQuestApi
 import com.fitquest.app.data.remote.dto.SsoRequest
 import com.fitquest.app.data.remote.dto.UserDto
 
+/** The outcome of exchanging an SSO credential for a FitQuest session. */
 sealed class AuthResult {
     data class Success(val user: UserDto) : AuthResult()
     data class Error(val message: String) : AuthResult()

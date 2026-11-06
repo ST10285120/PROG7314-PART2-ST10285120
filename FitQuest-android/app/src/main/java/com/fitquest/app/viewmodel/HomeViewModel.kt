@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+/** What the Home screen displays, apart from the profile and workout flows. */
 data class HomeUiState(
     val suggestedTitle: String = "",
     val suggestedExercises: List<SuggestedWorkoutExerciseDto> = emptyList(),

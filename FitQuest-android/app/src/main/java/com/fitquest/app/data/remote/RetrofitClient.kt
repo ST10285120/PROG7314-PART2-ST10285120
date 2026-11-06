@@ -54,6 +54,7 @@ class AuthInterceptor(private val tokenStore: TokenStore) : Interceptor {
     }
 }
 
+/** Builds the shared HTTP client and the Retrofit API. */
 object RetrofitClient {
 
     /** The API can take close to a minute to wake on Render's free tier. */

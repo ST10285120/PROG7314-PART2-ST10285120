@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+/** The workout in progress, as shown on the logging and summary screens. */
 data class WorkoutUiState(
     val workoutLocalId: String? = null,
     val workoutStartedAt: Long? = null,

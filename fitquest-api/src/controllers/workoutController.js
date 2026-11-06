@@ -1,3 +1,6 @@
+/**
+ * Workout logging, offline sync, history and suggestions.
+ */
 const mongoose = require('mongoose');
 const Workout = require('../models/Workout');
 const Exercise = require('../models/Exercise');

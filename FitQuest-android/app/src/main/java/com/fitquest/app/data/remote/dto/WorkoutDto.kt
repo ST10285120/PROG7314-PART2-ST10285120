@@ -21,6 +21,7 @@ data class SyncWorkoutRequest(
     val exercises: List<SyncExerciseDto>
 )
 
+/** One exercise inside a synced workout. */
 data class SyncExerciseDto(
     val clientId: String,
     val exerciseId: String,
@@ -28,6 +29,7 @@ data class SyncExerciseDto(
     val sets: List<SyncSetDto>
 )
 
+/** One logged set inside a synced workout, always in kilograms. */
 data class SyncSetDto(
     val clientId: String,
     val setNumber: Int,
@@ -64,6 +66,7 @@ data class BadgeDto(
     val progress: Int = 0
 )
 
+/** An exercise reference, used by suggestions and routines. */
 data class SuggestedWorkoutExerciseDto(
     val exerciseId: String,
     val name: String,
@@ -107,6 +110,7 @@ data class HistoryWorkoutDto(
     val exercises: List<HistoryExerciseDto>
 )
 
+/** An exercise inside a restored workout. */
 data class HistoryExerciseDto(
     val id: String,
     val clientId: String?,
@@ -116,6 +120,7 @@ data class HistoryExerciseDto(
     val sets: List<HistorySetDto>
 )
 
+/** A set inside a restored workout. */
 data class HistorySetDto(
     val id: String,
     val clientId: String?,

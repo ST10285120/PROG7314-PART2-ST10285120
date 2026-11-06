@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+/** What the Progress screen displays. */
 data class ProgressUiState(
     val progress: ProgressResponse? = null,
     val isLoading: Boolean = true,

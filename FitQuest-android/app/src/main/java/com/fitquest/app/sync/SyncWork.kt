@@ -38,6 +38,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
     }
 }
 
+/** Queues [SyncWorker] to run when the phone has a connection. */
 object SyncScheduler {
 
     private const val WORK_NAME = "fitquest-sync"
