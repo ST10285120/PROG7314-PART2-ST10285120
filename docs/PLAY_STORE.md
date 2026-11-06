@@ -4,7 +4,7 @@
 
 - [x] Application ID: `com.fitquest.app`
 - [x] Version: 2.0.0 (code 2)
-- [x] Target SDK 35, minimum SDK 26
+- [x] Target SDK 36, minimum SDK 26
 - [x] R8 minification and resource shrinking on release builds
 - [x] Release signing configured outside Git
 - [x] Network logging removed from release builds
