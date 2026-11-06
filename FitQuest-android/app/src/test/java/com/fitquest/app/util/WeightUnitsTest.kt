@@ -25,6 +25,12 @@ class WeightUnitsTest {
     }
 
     @Test
+    fun `compact shortens large totals only`() {
+        assertEquals("950 kg", WeightUnits.compact(950.0, "KG"))
+        assertEquals("%.1fk kg".format(12.5), WeightUnits.compact(12500.0, "KG"))
+    }
+
+    @Test
     fun `the unit label follows the setting`() {
         assertEquals("lb", WeightUnits.label("LB"))
         assertEquals("kg", WeightUnits.label("KG"))

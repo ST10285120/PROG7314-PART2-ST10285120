@@ -38,6 +38,7 @@ import com.fitquest.app.ui.components.ConfirmDialog
 import com.fitquest.app.ui.components.EmptyState
 import com.fitquest.app.ui.components.ErrorBanner
 import com.fitquest.app.ui.components.FitQuestCard
+import com.fitquest.app.ui.components.InfoBanner
 import com.fitquest.app.ui.components.LoadingBlock
 import com.fitquest.app.ui.components.PrimaryButton
 import com.fitquest.app.ui.components.SectionHeader
@@ -84,13 +85,13 @@ fun ProgressScreen(
         verticalArrangement = Arrangement.spacedBy(Spacing.sm)
     ) {
         if (uiState.isOfflineData) {
-            item { ErrorBanner(stringResource(R.string.offline_progress)) }
+            item { InfoBanner(stringResource(R.string.offline_progress)) }
         }
 
         item {
             StatsHero(
                 workouts = progress?.totalWorkouts?.takeIf { it > 0 } ?: recentWorkouts.size,
-                volume = WeightUnits.format(totalVolumeKg, units),
+                volume = WeightUnits.compact(totalVolumeKg, units),
                 records = records.size
             )
         }
@@ -350,7 +351,7 @@ fun WorkoutSummaryScreen(completion: CompletionResult?, onDone: () -> Unit) {
                 }
                 if (completion.pendingSync) {
                     Spacer(Modifier.height(Spacing.md))
-                    ErrorBanner(stringResource(R.string.estimate_notice))
+                    InfoBanner(stringResource(R.string.estimate_notice))
                 }
                 if (completion.badgeNames.isNotEmpty()) {
                     Spacer(Modifier.height(Spacing.md))

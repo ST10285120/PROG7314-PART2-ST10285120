@@ -115,6 +115,23 @@ fun StatusChip(
     }
 }
 
+/** Shows neutral information, such as offline status, without looking like a failure. */
+@Composable
+fun InfoBanner(message: String, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.small,
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(Spacing.md)
+        )
+    }
+}
+
 /** Shows a problem to the user without interrupting the screen. */
 @Composable
 fun ErrorBanner(message: String, modifier: Modifier = Modifier) {
