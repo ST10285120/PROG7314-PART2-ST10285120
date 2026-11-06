@@ -79,6 +79,10 @@ These are the features I specified during Part 1 and completed for the POE.
 - Illustrated empty states, a stats hero on Progress and a profile hero in Settings.
 - Confetti and a counting XP total on the workout summary.
 
+### Personal record reset
+
+The Progress screen can now start personal records again after a confirmation. Workout history, XP, level and earned badges stay, and the API ignores earlier workouts when judging new records.
+
 ### Known limitations
 
 - Photos need a connection. They are not queued offline.

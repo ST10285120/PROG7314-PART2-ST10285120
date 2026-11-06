@@ -82,6 +82,10 @@
     <string name="muscle_split">Muscle group split</string>
     <string name="personal_records">Personal Records</string>
     <string name="no_records">No records yet. Beat a previous weight to set your first one.</string>
+    <string name="reset_records">Reset</string>
+    <string name="reset_records_title">Reset personal records?</string>
+    <string name="reset_records_message">Your records start again from your next workout. Your workout history, XP, level and earned badges stay. This cannot be undone.</string>
+    <string name="reset_records_error">Your records couldn\'t be reset. Check your connection and try again.</string>
     <string name="workout_history">Workout History</string>
     <string name="no_history">No completed workouts yet. Finish one to see it here.</string>
     <string name="pending_sync">Pending sync</string>

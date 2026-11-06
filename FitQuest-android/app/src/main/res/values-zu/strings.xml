@@ -81,6 +81,10 @@
     <string name="muscle_split">Ukwabiwa kwamaqembu emisipha</string>
     <string name="personal_records">Amarekhodi akho</string>
     <string name="no_records">Awekho amarekhodi okwamanje. Dlula isisindo sangaphambili ukuze usethe elokuqala.</string>
+    <string name="reset_records">Qala kabusha</string>
+    <string name="reset_records_title">Qala kabusha amarekhodi akho?</string>
+    <string name="reset_records_message">Amarekhodi akho azoqala kabusha ekuzivocavoceni kwakho okulandelayo. Umlando wakho wokuzivocavoca, i-XP, izinga namabheji owatholile kuyahlala. Lokhu akukwazi ukuhlehliswa.</string>
+    <string name="reset_records_error">Amarekhodi akho awakwazanga ukuqalwa kabusha. Hlola uxhumano lwakho bese uzama futhi.</string>
     <string name="workout_history">Umlando wokuzivocavoca</string>
     <string name="no_history">Akukabi khona ukuzivocavoca okuqediwe. Qeda okukodwa ukuze ukubone lapha.</string>
     <string name="pending_sync">Ilindele ukuvumelaniswa</string>

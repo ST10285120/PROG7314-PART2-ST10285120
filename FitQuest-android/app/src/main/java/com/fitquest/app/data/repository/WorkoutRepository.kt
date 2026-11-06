@@ -143,7 +143,7 @@ class WorkoutRepository(
         weightKg: Double,
         rpe: Int?
     ): SetEntryEntity {
-        val bestSoFar = setEntryDao.getBestWeightForExercise(exerciseId)
+        val bestSoFar = setEntryDao.getBestWeightForExercise(exerciseId, localCache.recordsResetAt)
         val entry = SetEntryEntity(
             localId = UUID.randomUUID().toString(),
             workoutExerciseLocalId = workoutExerciseLocalId,
@@ -160,6 +160,28 @@ class WorkoutRepository(
             syncInBackground(workoutExercise.workoutLocalId)
         }
         return entry
+    }
+
+    /**
+     * Starts personal records again. Queued workouts are sent first, so they cannot
+     * bring old records back afterwards. The reset needs a connection for that reason.
+     */
+    suspend fun resetPersonalRecords(): Result<Unit> {
+        return try {
+            if (!syncPendingWorkouts()) return Result.failure(Exception("Workouts are waiting to sync"))
+            val response = api.resetPersonalRecords()
+            val body = response.body()
+            if (!response.isSuccessful || body == null) {
+                return Result.failure(Exception("HTTP ${response.code()}"))
+            }
+            localCache.recordsResetAt = Instant.parse(body.recordsResetAt).toEpochMilli()
+            setEntryDao.clearPersonalRecords()
+            Log.i(TAG, "Personal records reset")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.w(TAG, "Personal record reset failed: ${e.message}")
+            Result.failure(e)
+        }
     }
 
     /** Removes a mistaken set. The next sync removes it from the server too. */

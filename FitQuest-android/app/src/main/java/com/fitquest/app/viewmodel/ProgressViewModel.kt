@@ -22,7 +22,9 @@ data class ProgressUiState(
     val isOfflineData: Boolean = false,
     val photos: List<ProgressPhotoDto> = emptyList(),
     val isUploadingPhoto: Boolean = false,
-    val photoError: Boolean = false
+    val photoError: Boolean = false,
+    val isResettingRecords: Boolean = false,
+    val recordsError: Boolean = false
 )
 
 /**
@@ -61,6 +63,15 @@ class ProgressViewModel(
             photoRepository.listPhotos().onSuccess { photos ->
                 _uiState.value = _uiState.value.copy(photos = photos)
             }
+        }
+    }
+
+    fun resetRecords() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isResettingRecords = true, recordsError = false)
+            val result = workoutRepository.resetPersonalRecords()
+            _uiState.value = _uiState.value.copy(isResettingRecords = false, recordsError = result.isFailure)
+            if (result.isSuccess) load()
         }
     }
 

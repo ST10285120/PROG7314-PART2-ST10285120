@@ -565,7 +565,8 @@ fun MainAppScaffold(
                     onAddPhoto = {
                         photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                     },
-                    onDeletePhoto = progressViewModel::deletePhoto
+                    onDeletePhoto = progressViewModel::deletePhoto,
+                    onResetRecords = progressViewModel::resetRecords
                 )
             }
 

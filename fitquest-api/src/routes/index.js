@@ -29,6 +29,7 @@ router.put('/users/me/routines', users.saveRoutines);
 router.get('/users/me/preferences', users.getPreferences);
 router.put('/users/me/preferences', users.updatePreferences);
 router.get('/users/me/progress', users.getProgress);
+router.post('/users/me/personal-records/reset', users.resetRecords);
 router.get('/users/me/badges', users.getBadges);
 router.post('/users/me/device-tokens', users.registerDeviceToken);
 router.post('/users/me/notifications/test', users.sendTestNotification);

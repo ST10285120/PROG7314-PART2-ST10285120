@@ -107,6 +107,7 @@ an `Authorization: Bearer <JWT>` header.
 | GET | `/users/me/preferences` | Read the signed-in user's settings |
 | PUT | `/users/me/preferences` | Update units, theme, reminder time, rest-timer default |
 | GET | `/users/me/progress` | Weekly volume, best lift per exercise and muscle group split |
+| POST | `/users/me/personal-records/reset` | Start personal records again, keeping workouts, XP and badges |
 | GET | `/users/me/badges` | List badges the user has earned |
 | GET | `/workouts/suggested?recoveryHours=48` | Rules-based next-workout suggestion |
 | GET | `/users/me` | The signed-in user's profile, XP, level and streak |

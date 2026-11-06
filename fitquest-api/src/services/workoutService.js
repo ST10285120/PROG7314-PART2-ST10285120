@@ -13,10 +13,13 @@ const {
 } = require('./gamificationService');
 const { sendToUser } = require('./pushService');
 
-/** The heaviest weight this user lifted for an exercise in any other workout. */
-async function findPriorBest(userId, exerciseId, excludeWorkoutId) {
+/** The heaviest weight this user lifted for an exercise in any other workout since the last reset. */
+async function findPriorBest(user, exerciseId, excludeWorkoutId) {
+  const match = { userId: user._id, _id: { $ne: excludeWorkoutId } };
+  if (user.recordsResetAt) match.startedAt = { $gte: user.recordsResetAt };
+
   const result = await Workout.aggregate([
-    { $match: { userId, _id: { $ne: excludeWorkoutId } } },
+    { $match: match },
     { $unwind: '$exercises' },
     { $match: { 'exercises.exerciseId': new mongoose.Types.ObjectId(String(exerciseId)) } },
     { $unwind: '$exercises.sets' },
@@ -33,6 +36,18 @@ function isPersonalRecord(weightKg, priorBest, setsThisWorkout) {
   const weights = setsThisWorkout.map((set) => set.weightKg);
   if (priorBest !== null) weights.push(priorBest);
   return weights.length > 0 && weightKg > Math.max(...weights);
+}
+
+/** Clears every record flag and makes later lifts ignore workouts from before now. */
+async function resetPersonalRecords(user) {
+  await Workout.updateMany(
+    { userId: user._id, 'exercises.sets.isPersonalRecord': true },
+    { $set: { 'exercises.$[].sets.$[record].isPersonalRecord': false } },
+    { arrayFilters: [{ 'record.isPersonalRecord': true }] }
+  );
+  user.recordsResetAt = new Date();
+  await user.save();
+  return user.recordsResetAt;
 }
 
 /**
@@ -95,4 +110,4 @@ function notifyAchievements(user, previousLevel, newBadges) {
   }
 }
 
-module.exports = { findPriorBest, isPersonalRecord, completeOnce };
+module.exports = { findPriorBest, isPersonalRecord, resetPersonalRecords, completeOnce };

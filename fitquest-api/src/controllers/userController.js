@@ -9,6 +9,7 @@ const Workout = require('../models/Workout');
 const ProgressPhoto = require('../models/ProgressPhoto');
 const blobStorage = require('../services/blobStorageService');
 const { sendToUser } = require('../services/pushService');
+const { resetPersonalRecords } = require('../services/workoutService');
 const { getBadgeStats } = require('../services/gamificationService');
 const { toUserResponse } = require('../utils/userResponse');
 
@@ -149,6 +150,7 @@ async function getProgress(req, res) {
     .sort({ completedAt: 1 })
     .populate('exercises.exerciseId');
 
+  const { recordsResetAt } = req.user;
   const volumeByWeek = {};
   const prsByExercise = {};
   const muscleGroupSplit = {};
@@ -156,6 +158,7 @@ async function getProgress(req, res) {
   for (const workout of workouts) {
     const weekKey = isoWeekKey(new Date(workout.completedAt));
     volumeByWeek[weekKey] = (volumeByWeek[weekKey] || 0) + workout.totalVolumeKg;
+    const countsForRecords = !recordsResetAt || workout.startedAt >= recordsResetAt;
 
     for (const we of workout.exercises) {
       // The exercise can be missing if the library entry was deleted.
@@ -165,7 +168,9 @@ async function getProgress(req, res) {
       for (const set of we.sets) {
         muscleGroupSplit[muscleGroup] =
           (muscleGroupSplit[muscleGroup] || 0) + set.reps * set.weightKg;
-        prsByExercise[name] = Math.max(prsByExercise[name] || 0, set.weightKg);
+        if (countsForRecords) {
+          prsByExercise[name] = Math.max(prsByExercise[name] || 0, set.weightKg);
+        }
       }
     }
   }
@@ -176,6 +181,12 @@ async function getProgress(req, res) {
     muscleGroupSplit,
     totalWorkouts: workouts.length,
   });
+}
+
+/** Starts personal records again. Workouts, XP, levels and earned badges are kept. */
+async function resetRecords(req, res) {
+  const recordsResetAt = await resetPersonalRecords(req.user);
+  return res.json({ recordsResetAt });
 }
 
 function isoWeekKey(date) {
@@ -342,6 +353,7 @@ module.exports = {
   getPreferences,
   updatePreferences,
   getProgress,
+  resetRecords,
   getBadges,
   getBadgeCatalog,
   registerDeviceToken,

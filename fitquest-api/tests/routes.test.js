@@ -281,6 +281,38 @@ describe('Regression fixes from Part 2 feedback', () => {
     expect(res.body.prsByExercise.Squat).toBe(100);
     expect(res.body.totalWorkouts).toBe(1);
   });
+
+  it('starts personal records again and keeps workouts and XP', async () => {
+    const token = await signInTestUser();
+    const auth = (req) => req.set('Authorization', `Bearer ${token}`);
+    const exercise = await Exercise.create({ name: 'Squat', muscleGroup: 'LEGS', equipment: 'Barbell', type: 'STRENGTH' });
+    await completedWorkout(token, exercise._id, [100]);
+    await completedWorkout(token, exercise._id, [110]);
+    const before = await auth(request(app).get('/api/users/me'));
+
+    const reset = await auth(request(app).post('/api/users/me/personal-records/reset'));
+    const afterReset = await auth(request(app).get('/api/users/me/progress'));
+    const after = await auth(request(app).get('/api/users/me'));
+    const history = await auth(request(app).get('/api/workouts/history'));
+
+    expect(reset.status).toBe(200);
+    expect(afterReset.body.prsByExercise).toEqual({});
+    expect(afterReset.body.totalWorkouts).toBe(2);
+    expect(after.body.xpTotal).toBe(before.body.xpTotal);
+    const flags = history.body.flatMap((w) => w.exercises.flatMap((e) => e.sets.map((s) => s.isPersonalRecord)));
+    expect(flags).toEqual([false, false]);
+
+    await completedWorkout(token, exercise._id, [90]);
+    const firstBack = await auth(request(app).get('/api/workouts/history'));
+    expect(firstBack.body[0].exercises[0].sets[0].isPersonalRecord).toBe(false);
+
+    await completedWorkout(token, exercise._id, [95]);
+    const secondBack = await auth(request(app).get('/api/workouts/history'));
+    const progress = await auth(request(app).get('/api/users/me/progress'));
+    const newest = secondBack.body.find((w) => w.exercises[0].sets[0].weightKg === 95);
+    expect(newest.exercises[0].sets[0].isPersonalRecord).toBe(true);
+    expect(progress.body.prsByExercise.Squat).toBe(95);
+  });
 });
 
 describe('POST /api/workouts/sync (offline replay)', () => {

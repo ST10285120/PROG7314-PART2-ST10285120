@@ -70,8 +70,23 @@ fun ProgressScreen(
     units: String,
     onClickWorkout: (String) -> Unit,
     onAddPhoto: () -> Unit,
-    onDeletePhoto: (String) -> Unit
+    onDeletePhoto: (String) -> Unit,
+    onResetRecords: () -> Unit
 ) {
+    var confirmReset by remember { mutableStateOf(false) }
+    if (confirmReset) {
+        ConfirmDialog(
+            title = stringResource(R.string.reset_records_title),
+            message = stringResource(R.string.reset_records_message),
+            confirmLabel = stringResource(R.string.reset_records),
+            onConfirm = {
+                confirmReset = false
+                onResetRecords()
+            },
+            onDismiss = { confirmReset = false }
+        )
+    }
+
     val dateFormat = remember { SimpleDateFormat("EEE, d MMM", Locale.getDefault()) }
     val progress = uiState.progress
     val totalVolumeKg = progress?.volumeByWeek?.values?.sum() ?: recentWorkouts.sumOf { it.totalVolumeKg }
@@ -131,7 +146,23 @@ fun ProgressScreen(
             }
         }
 
-        item { SectionHeader(stringResource(R.string.personal_records)) }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SectionHeader(stringResource(R.string.personal_records))
+                if (records.isNotEmpty()) {
+                    TextButton(onClick = { confirmReset = true }, enabled = !uiState.isResettingRecords) {
+                        Text(stringResource(R.string.reset_records))
+                    }
+                }
+            }
+        }
+        if (uiState.recordsError) {
+            item { ErrorBanner(stringResource(R.string.reset_records_error)) }
+        }
         if (records.isEmpty()) {
             item {
                 EmptyState(icon = Icons.Filled.EmojiEvents, message = stringResource(R.string.no_records))

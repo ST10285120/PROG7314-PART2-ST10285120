@@ -71,7 +71,7 @@ async function logSet(req, res) {
   const we = isId(weId) ? workout.exercises.id(weId) : null;
   if (!we) return res.status(404).json({ error: 'WorkoutExercise not found' });
 
-  const priorBest = await findPriorBest(req.user._id, we.exerciseId, workout._id);
+  const priorBest = await findPriorBest(req.user, we.exerciseId, workout._id);
   const personalRecord = isPersonalRecord(weightKg, priorBest, we.sets);
 
   we.sets.push({ setNumber, reps, weightKg, rpe: rpe ?? null, isPersonalRecord: personalRecord });
@@ -126,7 +126,7 @@ function validateSyncBody({ clientId, title, exercises }) {
 }
 
 /** Applies the phone's exercises and sets. Known clientIds are skipped, missing sets removed. */
-async function mergeExercises(workout, userId, exercises) {
+async function mergeExercises(workout, user, exercises) {
   const priorBestByExercise = new Map();
 
   for (const incoming of exercises) {
@@ -150,7 +150,7 @@ async function mergeExercises(workout, userId, exercises) {
       if (we.sets.some((candidate) => candidate.clientId === set.clientId)) continue;
 
       if (!priorBestByExercise.has(key)) {
-        priorBestByExercise.set(key, await findPriorBest(userId, incoming.exerciseId, workout._id));
+        priorBestByExercise.set(key, await findPriorBest(user, incoming.exerciseId, workout._id));
       }
       we.sets.push({
         clientId: set.clientId,
@@ -180,7 +180,7 @@ async function syncWorkout(req, res) {
 
   // A finished workout is final; its XP has already been awarded from these sets.
   if (!workout.completedAt) {
-    await mergeExercises(workout, req.user._id, exercises);
+    await mergeExercises(workout, req.user, exercises);
     await workout.save();
   }
 

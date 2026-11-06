@@ -81,6 +81,10 @@
     <string name="muscle_split">Spiergroepverdeling</string>
     <string name="personal_records">Persoonlike rekords</string>
     <string name="no_records">Nog geen rekords nie. Klop \'n vorige gewig om jou eerste een op te stel.</string>
+    <string name="reset_records">Stel terug</string>
+    <string name="reset_records_title">Stel persoonlike rekords terug?</string>
+    <string name="reset_records_message">Jou rekords begin weer van jou volgende oefensessie af. Jou oefensessiegeskiedenis, XP, vlak en verdiende kentekens bly. Dit kan nie ontdoen word nie.</string>
+    <string name="reset_records_error">Jou rekords kon nie teruggestel word nie. Kontroleer jou verbinding en probeer weer.</string>
     <string name="workout_history">Oefensessiegeskiedenis</string>
     <string name="no_history">Nog geen voltooide oefensessies nie. Voltooi een om dit hier te sien.</string>
     <string name="pending_sync">Wag vir sinkronisering</string>

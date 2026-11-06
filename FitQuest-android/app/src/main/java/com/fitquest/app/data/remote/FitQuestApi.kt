@@ -42,6 +42,9 @@ interface FitQuestApi {
     @GET("api/users/me/progress")
     suspend fun getProgress(): Response<ProgressResponse>
 
+    @POST("api/users/me/personal-records/reset")
+    suspend fun resetPersonalRecords(): Response<ResetRecordsResponse>
+
     @GET("api/badges")
     suspend fun getBadgeCatalog(): Response<List<BadgeDto>>
 

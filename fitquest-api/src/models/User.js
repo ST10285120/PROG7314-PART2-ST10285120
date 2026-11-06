@@ -14,6 +14,8 @@ const userSchema = new mongoose.Schema(
     currentStreak: { type: Number, default: 0 },
     longestStreak: { type: Number, default: 0 },
     lastWorkoutDate: { type: Date, default: null },
+    // Lifts from workouts started before this date no longer count as records.
+    recordsResetAt: { type: Date, default: null },
     // Blob name of the profile picture; bytes live in blob storage, not MongoDB.
     avatarBlobName: { type: String, default: null },
     // FCM registration tokens, one per signed-in device.

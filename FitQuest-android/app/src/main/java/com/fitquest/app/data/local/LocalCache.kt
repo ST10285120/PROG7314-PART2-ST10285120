@@ -30,6 +30,14 @@ class LocalCache(context: Context) {
         get() = prefs.getBoolean(KEY_PREFERENCES_PENDING, false)
         set(value) = prefs.edit().putBoolean(KEY_PREFERENCES_PENDING, value).apply()
 
+    /**
+     * When records last started again, for the phone's PR estimate. A reinstalled phone
+     * loses this, but the server still decides, so only the estimate is affected.
+     */
+    var recordsResetAt: Long
+        get() = prefs.getLong(KEY_RECORDS_RESET_AT, 0L)
+        set(value) = prefs.edit().putLong(KEY_RECORDS_RESET_AT, value).apply()
+
     fun savePreferences(preferences: PreferencesDto) = putJson(KEY_PREFERENCES, preferences)
 
     fun getPreferences(): PreferencesDto? =
@@ -87,6 +95,7 @@ class LocalCache(context: Context) {
             .remove(KEY_ROUTINES_PENDING)
             .remove(KEY_BADGES)
             .remove(KEY_PROGRESS)
+            .remove(KEY_RECORDS_RESET_AT)
             .apply()
     }
 
@@ -110,6 +119,7 @@ class LocalCache(context: Context) {
         const val KEY_ROUTINES_PENDING = "routines_pending"
         const val KEY_BADGES = "badges"
         const val KEY_PROGRESS = "progress"
+        const val KEY_RECORDS_RESET_AT = "records_reset_at"
         const val KEY_PREFERENCES = "preferences"
         const val KEY_PREFERENCES_PENDING = "preferences_pending"
     }

@@ -127,16 +127,41 @@ class WorkoutRepositoryTest {
 
     @Test
     fun `logSet does not estimate a PR when there is no prior best`() = runTest {
-        whenever(setEntryDao.getBestWeightForExercise("ex1")).thenReturn(null)
+        whenever(setEntryDao.getBestWeightForExercise("ex1", 0L)).thenReturn(null)
 
         assertFalse(repository.logSet("we1", "ex1", 1, 8, 60.0, null).isPersonalRecord)
     }
 
     @Test
     fun `logSet estimates a PR when it beats the prior best`() = runTest {
-        whenever(setEntryDao.getBestWeightForExercise("ex1")).thenReturn(50.0)
+        whenever(setEntryDao.getBestWeightForExercise("ex1", 0L)).thenReturn(50.0)
 
         assertTrue(repository.logSet("we1", "ex1", 1, 8, 60.0, null).isPersonalRecord)
+    }
+
+    @Test
+    fun `resetting records clears local flags and sets the new start`() = runTest {
+        whenever(workoutDao.getUnsynced()).thenReturn(emptyList())
+        whenever(api.resetPersonalRecords()).thenReturn(
+            Response.success(ResetRecordsResponse("2026-03-01T08:00:00Z"))
+        )
+
+        assertTrue(repository.resetPersonalRecords().isSuccess)
+
+        verify(localCache).recordsResetAt = 1772352000000L
+        verify(setEntryDao).clearPersonalRecords()
+    }
+
+    @Test
+    fun `records are kept when queued workouts cannot be sent first`() = runTest {
+        givenStoredWorkout()
+        whenever(workoutDao.getUnsynced()).thenReturn(listOf(workout))
+        whenever(api.syncWorkout(any())).thenThrow(RuntimeException("offline"))
+
+        assertTrue(repository.resetPersonalRecords().isFailure)
+
+        verify(api, never()).resetPersonalRecords()
+        verify(setEntryDao, never()).clearPersonalRecords()
     }
 
     @Test

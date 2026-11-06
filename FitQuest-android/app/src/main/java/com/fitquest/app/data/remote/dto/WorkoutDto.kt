@@ -48,6 +48,9 @@ data class SyncWorkoutResponse(
 /** The authoritative PR decision for one set. */
 data class SyncedSetDto(val clientId: String, val isPersonalRecord: Boolean)
 
+/** When personal records last started again. */
+data class ResetRecordsResponse(val recordsResetAt: String)
+
 /** Gamification results calculated by the API. */
 data class CompletionDto(
     val xpEarned: Int,

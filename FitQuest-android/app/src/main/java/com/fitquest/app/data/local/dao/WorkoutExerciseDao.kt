@@ -70,8 +70,20 @@ interface SetEntryDao {
     )
     suspend fun countSets(workoutLocalId: String): Int
 
-    @Query("SELECT MAX(weightKg) FROM set_entries WHERE workoutExerciseLocalId IN (SELECT localId FROM workout_exercises WHERE exerciseId = :exerciseId)")
-    suspend fun getBestWeightForExercise(exerciseId: String): Double?
+    @Query(
+        """
+        SELECT MAX(weightKg) FROM set_entries
+        WHERE workoutExerciseLocalId IN (
+            SELECT we.localId FROM workout_exercises we
+            JOIN workouts w ON we.workoutLocalId = w.localId
+            WHERE we.exerciseId = :exerciseId AND w.startedAt >= :since
+        )
+        """
+    )
+    suspend fun getBestWeightForExercise(exerciseId: String, since: Long): Double?
+
+    @Query("UPDATE set_entries SET isPersonalRecord = 0 WHERE isPersonalRecord = 1")
+    suspend fun clearPersonalRecords()
 
     @Query(
         """

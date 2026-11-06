@@ -64,6 +64,34 @@ class ProgressViewModelTest {
     }
 
     @Test
+    fun `a failed record reset shows an error and keeps the records`() = runTest {
+        whenever(workoutRepository.getProgress()).thenReturn(Result.success(progress))
+        whenever(photoRepository.listPhotos()).thenReturn(Result.success(emptyList()))
+        whenever(workoutRepository.resetPersonalRecords()).thenReturn(Result.failure(Exception("offline")))
+        val viewModel = ProgressViewModel(workoutRepository, photoRepository)
+
+        viewModel.resetRecords()
+
+        assertTrue(viewModel.uiState.value.recordsError)
+        assertFalse(viewModel.uiState.value.isResettingRecords)
+        assertEquals(progress, viewModel.uiState.value.progress)
+    }
+
+    @Test
+    fun `a successful record reset reloads progress`() = runTest {
+        val cleared = progress.copy(prsByExercise = emptyMap())
+        whenever(workoutRepository.getProgress()).thenReturn(Result.success(progress), Result.success(cleared))
+        whenever(photoRepository.listPhotos()).thenReturn(Result.success(emptyList()))
+        whenever(workoutRepository.resetPersonalRecords()).thenReturn(Result.success(Unit))
+        val viewModel = ProgressViewModel(workoutRepository, photoRepository)
+
+        viewModel.resetRecords()
+
+        assertEquals(cleared, viewModel.uiState.value.progress)
+        assertFalse(viewModel.uiState.value.recordsError)
+    }
+
+    @Test
     fun `an uploaded photo goes to the front of the list`() = runTest {
         whenever(workoutRepository.getProgress()).thenReturn(Result.success(progress))
         whenever(photoRepository.listPhotos()).thenReturn(Result.success(emptyList()))
