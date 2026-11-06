@@ -7,9 +7,6 @@ FitQuest is a native Android strength-training app with a role-playing progressi
 
 > **Module:** PROG7314 Portfolio of Evidence · **Student:** Carson Norman (ST10285120)
 
-## Demonstration video
-
-**[Watch the FitQuest demonstration](PASTE_YOUR_UNLISTED_YOUTUBE_LINK_HERE)**
 
 ## Purpose
 
