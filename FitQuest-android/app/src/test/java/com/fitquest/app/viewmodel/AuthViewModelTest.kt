@@ -15,6 +15,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -133,6 +134,17 @@ class AuthViewModelTest {
         createViewModel().signInWithGitHubCode("code")
 
         verify(profileRepository).setProfile(testUser)
+    }
+
+    @Test
+    fun `cancelling Google sign-in returns to the sign-in screen without an error`() = runTest {
+        whenever(authRepository.isSignedIn()).thenReturn(false)
+        whenever(googleSignInManager.signIn(any())).thenReturn(SsoResult.Cancelled)
+        val viewModel = createViewModel()
+
+        viewModel.signInWithGoogle(mock())
+
+        assertEquals(AuthUiState.SignedOut, viewModel.uiState.value)
     }
 
     @Test

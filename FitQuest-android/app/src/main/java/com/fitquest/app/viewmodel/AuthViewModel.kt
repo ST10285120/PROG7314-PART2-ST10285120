@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
+/** Every state of the sign-in flow that the UI can show. */
 sealed class AuthUiState {
     data object SignedOut : AuthUiState()
     data object Loading : AuthUiState()
@@ -57,7 +58,11 @@ class AuthViewModel(
         viewModelScope.launch {
             when (val result = googleSignInManager.signIn(activityContext)) {
                 is SsoResult.Success -> completeSignIn { authRepository.signInWithGoogle(result.idToken) }
-                is SsoResult.Failure -> _uiState.value = AuthUiState.Error(result.message)
+                is SsoResult.Cancelled -> _uiState.value = AuthUiState.SignedOut
+                is SsoResult.Failure -> {
+                    Log.w(TAG, "Google sign-in failed: ${result.message}")
+                    _uiState.value = AuthUiState.Error(result.message)
+                }
             }
         }
     }

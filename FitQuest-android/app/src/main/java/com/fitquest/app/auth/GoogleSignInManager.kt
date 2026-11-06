@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import com.fitquest.app.BuildConfig
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
@@ -14,6 +15,7 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingExcept
 sealed class SsoResult {
     data class Success(val idToken: String) : SsoResult()
     data class Failure(val message: String) : SsoResult()
+    data object Cancelled : SsoResult()
 }
 
 /**
@@ -49,6 +51,9 @@ class GoogleSignInManager(private val context: Context) {
             } else {
                 SsoResult.Failure("Unexpected credential type returned by Credential Manager")
             }
+        } catch (e: GetCredentialCancellationException) {
+            // Closing the account sheet is a choice, not an error.
+            SsoResult.Cancelled
         } catch (e: GetCredentialException) {
             SsoResult.Failure(e.message ?: "Google sign-in was cancelled or failed")
         } catch (e: GoogleIdTokenParsingException) {
